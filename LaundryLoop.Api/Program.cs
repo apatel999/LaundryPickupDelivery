@@ -30,6 +30,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("FrontendPolicy");
+app.UseStaticFiles();
 app.UseAuthorization();
 app.MapControllers();
 
