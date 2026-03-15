@@ -1,11 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-
-using System.ComponentModel.DataAnnotations;
-
 namespace LaundryLoop.Api.Models;
 
-// Inbound from the HTML form
+// ── Inbound from the HTML form ──
 public class CreateBookingRequest
 {
     [Required]
@@ -48,7 +45,7 @@ public class CreateBookingRequest
     public string? Notes { get; set; }
 }
 
-// Outbound to the browser
+// ── Outbound to the browser ──
 public class BookingResponse
 {
     public int Id { get; set; }

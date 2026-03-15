@@ -1,4 +1,3 @@
-
 using LaundryLoop.Api.Data;
 using LaundryLoop.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +17,9 @@ public class BookingsController : ControllerBase
         _logger = logger;
     }
 
+    // ─────────────────────────────────────────
     // POST /api/bookings
+    // ─────────────────────────────────────────
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateBookingRequest req)
     {
@@ -55,7 +56,9 @@ public class BookingsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = booking.Id }, MapToResponse(booking));
     }
 
+    // ─────────────────────────────────────────
     // GET /api/bookings/{id}
+    // ─────────────────────────────────────────
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
@@ -63,7 +66,9 @@ public class BookingsController : ControllerBase
         return booking is null ? NotFound() : Ok(MapToResponse(booking));
     }
 
-    // GET /api/bookings?page=1&pageSize=50&status=Pending&sortBy=apartmentAddress&sortDir=asc
+    // ─────────────────────────────────────────
+    // GET /api/bookings?page=1&pageSize=20&status=Pending&sortBy=apartmentAddress&sortDir=asc
+    // ─────────────────────────────────────────
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page       = 1,
@@ -83,8 +88,10 @@ public class BookingsController : ControllerBase
         });
     }
 
+    // ─────────────────────────────────────────
     // PATCH /api/bookings/{id}/status
     // Body: { "status": "PickedUp" }
+    // ─────────────────────────────────────────
     [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusRequest req)
     {
@@ -96,7 +103,9 @@ public class BookingsController : ControllerBase
         return booking is null ? NotFound() : Ok(MapToResponse(booking));
     }
 
+    // ─────────────────────────────────────────
     // DELETE /api/bookings/{id}
+    // ─────────────────────────────────────────
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -104,7 +113,9 @@ public class BookingsController : ControllerBase
         return deleted ? NoContent() : NotFound();
     }
 
+    // ─────────────────────────────────────────
     // Helpers
+    // ─────────────────────────────────────────
     private static string GenerateReference()
         => $"LLP-{Random.Shared.Next(100_000, 999_999)}";
 

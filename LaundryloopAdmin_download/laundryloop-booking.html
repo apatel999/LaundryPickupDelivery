@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LaundryLoop — Pickup &amp; Delivery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet"/>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand:        #3d2db5;
+    --brand-dark:   #2c1f8f;
+    --brand-mid:    #5b4dd4;
+    --brand-light:  #edeafd;
+    --accent:       #f97316;
+    --accent-light: #fff4ed;
+    --text:         #1a1830;
+    --muted:        #6b6882;
+    --border:       rgba(61,45,181,0.10);
+    --border-mid:   rgba(61,45,181,0.18);
+    --surface:      #ffffff;
+    --page:         #f4f3fb;
+    --danger:       #c93535;
+    --danger-bg:    #fdf2f2;
+  }
+
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--page); color: var(--text); min-height: 100vh; font-size: 15px; }
+
+  /* HEADER */
+  .app-header { background: var(--brand); padding: 15px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 14px rgba(0,0,0,0.18); display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; color: #fff; letter-spacing: -0.4px; line-height: 1; }
+  .logo em { color: var(--accent); font-style: normal; }
+  .logo-sub { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 3px; font-weight: 400; }
+
+  /* STEP BAR */
+  .step-bar { background: var(--brand-dark); padding: 11px 24px 13px; overflow-x: auto; }
+  .step-bar-inner { display: flex; align-items: center; max-width: 520px; margin: 0 auto; min-width: max-content; }
+  .step-item { display: flex; align-items: center; gap: 7px; opacity: 0.4; transition: opacity 0.25s; flex-shrink: 0; }
+  .step-item.active { opacity: 1; }
+  .step-item.done   { opacity: 0.7; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #fff; flex-shrink: 0; transition: all 0.25s; }
+  .step-item.active .step-num { background: var(--accent); border-color: var(--accent); color: #1c1c1a; font-weight: 700; }
+  .step-item.done .step-num   { background: rgba(255,255,255,0.18); border-color: transparent; }
+  .step-item.done .step-num::before { content: '✓'; font-size: 11px; }
+  .step-item.done .step-num span { display: none; }
+  .step-label { font-size: 11px; color: #fff; font-weight: 500; white-space: nowrap; }
+  .step-line  { width: 32px; height: 1px; background: rgba(255,255,255,0.18); flex-shrink: 0; margin: 0 2px; }
+
+  /* LAYOUT */
+  .page-wrap { max-width: 540px; margin: 0 auto; padding: 26px 16px 64px; }
+  .page { display: none; animation: fadeUp 0.28s ease; }
+  .page.active { display: block; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  /* PANELS */
+  .panel { background: var(--surface); border-radius: 20px; border: 0.5px solid var(--border); box-shadow: 0 1px 6px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04); margin-bottom: 14px; padding: 24px 22px; }
+  .panel-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 300; color: var(--text); margin-bottom: 3px; line-height: 1.25; }
+  .panel-sub   { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.55; }
+
+  /* FORM ELEMENTS */
+  .f-label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.55px; margin-bottom: 7px; }
+  .f-label .opt { font-weight: 400; text-transform: none; letter-spacing: 0; color: #b0afa8; font-size: 11px; }
+
+  .form-control, .form-select {
+    border: 0.5px solid var(--border-mid) !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-family: 'DM Sans', sans-serif !important;
+    color: var(--text) !important;
+    background: var(--surface) !important;
+    padding: 10px 13px !important;
+    transition: border-color 0.15s, box-shadow 0.15s !important;
+    outline: none !important;
+  }
+  .form-control::placeholder { color: #c5c4be !important; }
+  .form-control:focus { border-color: var(--brand-mid) !important; box-shadow: 0 0 0 3px rgba(45,158,140,0.12) !important; }
+  .form-control.is-err { border-color: var(--danger) !important; background: var(--danger-bg) !important; }
+
+  .input-group-text { border: 0.5px solid var(--border-mid) !important; border-right: none !important; border-radius: 10px 0 0 10px !important; background: var(--page) !important; font-size: 13px !important; color: var(--muted) !important; padding: 10px 12px !important; }
+  .input-group .form-control { border-radius: 0 10px 10px 0 !important; }
+
+  .err-msg { font-size: 12px; color: var(--danger); margin-top: 5px; display: none; }
+  .err-msg.show { display: block; }
+  .divider { height: 0.5px; background: var(--border); margin: 18px 0; }
+
+  /* APARTMENT CARDS */
+  .apt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .apt-opt { cursor: pointer; display: block; }
+  .apt-opt input { display: none; }
+  .apt-box { border: 0.5px solid var(--border-mid); border-radius: 14px; padding: 14px 13px; background: var(--surface); transition: all 0.15s; position: relative; }
+  .apt-box:hover { border-color: var(--brand-mid); background: var(--brand-light); }
+  .apt-opt input:checked + .apt-box { border: 2px solid var(--brand-mid); background: var(--brand-light); }
+  .apt-icon { font-size: 24px; margin-bottom: 7px; line-height: 1; }
+  .apt-name { font-size: 13.5px; font-weight: 500; color: var(--text); }
+  .apt-addr { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .apt-opt input:checked + .apt-box .apt-name { color: var(--brand); }
+  .apt-badge { position: absolute; top: 9px; right: 9px; width: 18px; height: 18px; border-radius: 50%; background: var(--brand); display: none; align-items: center; justify-content: center; }
+  .apt-opt input:checked + .apt-box .apt-badge { display: flex; }
+  .apt-badge svg { width: 9px; height: 9px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* SLOT CARDS */
+  .slot-opt { cursor: pointer; display: block; }
+  .slot-opt input { display: none; }
+  .slot-box { border: 0.5px solid var(--border-mid); border-radius: 14px; padding: 14px 16px; background: var(--surface); transition: all 0.15s; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .slot-box:hover { border-color: var(--brand-mid); background: var(--brand-light); }
+  .slot-opt input:checked + .slot-box { border: 2px solid var(--brand-mid); background: var(--brand-light); }
+  .slot-day { font-size: 14px; font-weight: 600; color: var(--text); }
+  .slot-opt input:checked + .slot-box .slot-day { color: var(--brand); }
+  .slot-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 20px; margin-top: 5px; }
+  .pill-p { background: var(--accent-light); color: #7c3d0f; }
+  .pill-d { background: var(--brand-light);  color: var(--brand); }
+  .slot-opt input:checked + .slot-box .pill-d { background: rgba(45,158,140,0.15); }
+
+  /* SERVICE CARDS */
+  .svc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .svc-opt { cursor: pointer; display: block; }
+  .svc-opt input { display: none; }
+  .svc-box { border: 0.5px solid var(--border-mid); border-radius: 14px; padding: 14px 12px 12px; background: var(--surface); transition: all 0.15s; text-align: center; position: relative; }
+  .svc-box:hover { border-color: var(--brand-mid); background: var(--brand-light); }
+  .svc-opt input:checked + .svc-box { border: 2px solid var(--brand-mid); background: var(--brand-light); }
+  .svc-em    { font-size: 26px; display: block; margin-bottom: 7px; line-height: 1; }
+  .svc-name  { font-size: 13px; font-weight: 500; color: var(--text); display: block; }
+  .svc-price { font-size: 11.5px; color: var(--muted); display: block; margin-top: 2px; }
+  .svc-opt input:checked + .svc-box .svc-name { color: var(--brand); }
+  .svc-badge { position: absolute; top: 9px; right: 9px; width: 18px; height: 18px; border-radius: 50%; background: var(--brand); display: none; align-items: center; justify-content: center; }
+  .svc-opt input:checked + .svc-box .svc-badge { display: flex; }
+  .svc-badge svg { width: 9px; height: 9px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ADDON CHIPS */
+  .addon-opt { cursor: pointer; display: inline-block; }
+  .addon-opt input { display: none; }
+  .addon-chip { border: 0.5px solid var(--border-mid); border-radius: 20px; padding: 7px 14px; font-size: 13px; background: var(--surface); transition: all 0.15s; display: inline-block; white-space: nowrap; }
+  .addon-opt input:checked + .addon-chip { border: 1.5px solid var(--brand-mid); background: var(--brand-light); color: var(--brand); font-weight: 500; }
+
+  /* REVIEW */
+  .rv-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px 0; border-bottom: 0.5px solid var(--border); font-size: 14px; gap: 16px; }
+  .rv-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .rv-label { color: var(--muted); flex-shrink: 0; }
+  .rv-val   { font-weight: 500; text-align: right; color: var(--text); }
+
+  /* BUTTONS */
+  .btn-brand { width: 100%; padding: 13px; background: var(--brand); color: #fff; border: none; border-radius: 11px; font-size: 15px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-brand:hover { background: var(--brand-dark); }
+  .btn-brand:active { transform: scale(0.99); }
+  .btn-ghost { width: 100%; padding: 12px; background: var(--surface); color: var(--brand); border: 1px solid var(--brand-mid); border-radius: 11px; font-size: 14px; font-weight: 500; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .btn-ghost:hover { background: var(--brand-light); }
+
+  /* NOTICE */
+  .notice { background: var(--brand-light); border: 0.5px solid rgba(91,77,212,0.3); border-radius: 11px; padding: 12px 14px; font-size: 13px; color: #2c1f8f; display: flex; gap: 10px; align-items: flex-start; line-height: 1.55; margin-bottom: 14px; }
+
+  /* SUCCESS */
+  .success-wrap { text-align: center; padding: 44px 20px 36px; }
+  .success-ring { width: 80px; height: 80px; border-radius: 50%; background: var(--brand-light); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; }
+  .success-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 300; margin-bottom: 10px; letter-spacing: -0.4px; }
+  .success-body  { font-size: 14px; color: var(--muted); line-height: 1.65; max-width: 300px; margin: 0 auto 24px; }
+  .ref-box { background: var(--page); border-radius: 11px; padding: 15px 20px; margin-bottom: 24px; font-size: 13px; color: var(--muted); }
+  .ref-num { font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: 3px; display: block; margin-top: 5px; }
+
+  @media (max-width: 540px) {
+    .page-wrap { padding: 16px 12px 56px; }
+    .panel { padding: 18px 16px; border-radius: 16px; }
+    .panel-title { font-size: 18px; }
+    .apt-grid { gap: 8px; }
+    .apt-icon, .svc-em { font-size: 20px; }
+    .apt-name, .svc-name { font-size: 13px; }
+    .pill { font-size: 11px; padding: 3px 8px; }
+    .row.g-2 > .col-4 { flex: 0 0 38%; max-width: 38%; }
+    .row.g-2 > .col-8 { flex: 0 0 62%; max-width: 62%; }
+    .step-label { display: none; }
+    .step-line { width: 40px; }
+    .addon-chip { font-size: 12px; padding: 6px 11px; }
+    .btn-brand, .btn-ghost { padding: 13px 10px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div>
+    <div class="logo">laundry<em>loop</em></div>
+    <div class="logo-sub">Pickup &amp; delivery</div>
+  </div>
+</header>
+
+<nav class="step-bar">
+  <div class="step-bar-inner">
+    <div class="step-item active" id="si-1"><div class="step-num"><span>1</span></div><div class="step-label">Your info</div></div>
+    <div class="step-line"></div>
+    <div class="step-item" id="si-2"><div class="step-num"><span>2</span></div><div class="step-label">Services</div></div>
+    <div class="step-line"></div>
+    <div class="step-item" id="si-3"><div class="step-num"><span>3</span></div><div class="step-label">Review</div></div>
+  </div>
+</nav>
+
+<div class="page-wrap">
+
+  <!-- ══ PAGE 1 ══ -->
+  <div class="page active" id="page-1">
+
+    <div class="panel">
+      <div class="panel-title">Where are you?</div>
+      <div class="panel-sub">Select your building and enter your unit details.</div>
+        <div class="apt-grid mb-1" id="apt-grid"></div>
+        <div class="err-msg" id="e-apt">Please select your building.</div>
+        <div class="divider"></div>
+        <div class="row g-2">
+          <div class="col-5">
+            <label class="f-label">Unit # <span style="color:var(--danger)">*</span></label>
+            <input type="text" class="form-control" id="f-unit" placeholder="e.g. 4B"/>
+            <div class="err-msg" id="e-unit">Required.</div>
+          </div>
+          <div class="col-7">
+            <label class="f-label">Buzzer code <span class="opt">(optional)</span></label>
+            <input type="text" class="form-control" id="f-buzzer" placeholder="e.g. #456"/>
+          </div>
+        </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Your contact</div>
+      <div class="panel-sub">We'll text you when your driver is on the way.</div>
+        <div class="mb-3">
+          <label class="f-label">Phone number <span style="color:var(--danger)">*</span> <span class="opt">— driver will text you</span></label>
+          <div class="input-group">
+            <span class="input-group-text">🇨🇦 +1</span>
+            <input type="tel" class="form-control" id="f-phone" placeholder="(416) 555-0123" maxlength="14" oninput="fmtPhone(this)"/>
+          </div>
+          <div class="err-msg" id="e-phone">Enter a valid 10-digit number.</div>
+        </div>
+        <div>
+          <label class="f-label">Email <span class="opt">(optional)</span></label>
+          <input type="email" class="form-control" id="f-email" placeholder="you@email.com"/>
+          <div class="err-msg" id="e-email">Enter a valid email address.</div>
+        </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">When should we pick up?</div>
+      <div class="panel-sub">Morning pickup → same day afternoon delivery.<br>Evening pickup → next morning delivery.</div>
+        <div class="d-flex flex-column gap-2" id="slot-grid"></div>
+        <div class="err-msg" id="e-slot">Please select a pickup slot.</div>
+    </div>
+
+    <button class="btn-brand" onclick="goPage(2)">Continue to Services &rarr;</button>
+  </div>
+
+  <!-- ══ PAGE 2 ══ -->
+  <div class="page" id="page-2">
+
+    <div class="panel">
+      <div class="panel-title">What needs washing?</div>
+      <div class="panel-sub">Select all that apply. Final price confirmed at pickup.</div>
+        <div class="svc-grid mb-1">
+          <label class="svc-opt"><input type="checkbox" id="sv-wash">   <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👕</span><span class="svc-name">Wash</span>      <span class="svc-price">$3.50 / lb</span></div></label>
+          <label class="svc-opt"><input type="checkbox" id="sv-dry">    <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">♨️</span><span class="svc-name">Dry</span>       <span class="svc-price">included w/ wash</span></div></label>
+          <label class="svc-opt"><input type="checkbox" id="sv-ironing"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👔</span><span class="svc-name">Ironing</span>   <span class="svc-price">$2.50 / item</span></div></label>
+          <label class="svc-opt"><input type="checkbox" id="sv-dryclean"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">🥼</span><span class="svc-name">Dry Clean</span><span class="svc-price">from $8 / item</span></div></label>
+          <label class="svc-opt"><input type="checkbox" id="sv-bedding"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">🛏️</span><span class="svc-name">Bedding</span>   <span class="svc-price">$6 / piece</span></div></label>
+          <label class="svc-opt"><input type="checkbox" id="sv-shoes">  <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👟</span><span class="svc-name">Shoes</span>     <span class="svc-price">$12 / pair</span></div></label>
+        </div>
+        <div class="err-msg" id="e-services">Please select at least one service.</div>
+
+        <div class="divider"></div>
+        <p class="f-label mb-2">Add-ons</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <label class="addon-opt"><input type="checkbox" id="ad-softener"><div class="addon-chip">Fabric softener</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-fragfree"><div class="addon-chip">Fragrance-free</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-hypo">    <div class="addon-chip">Hypoallergenic</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-cold">    <div class="addon-chip">Cold wash</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-hangdry"> <div class="addon-chip">Hang dry</div></label>
+        </div>
+
+        <label class="f-label">Notes <span class="opt">(optional)</span></label>
+        <textarea class="form-control" id="f-notes" rows="2" placeholder="Detergent preferences, garment care, allergies…"></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <button class="btn-ghost" style="flex:0 0 auto;width:auto;padding:13px 20px" onclick="goPage(1)">&#8592; Back</button>
+      <button class="btn-brand" style="flex:1" onclick="goPage(3)">Review Order &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ══ PAGE 3 ══ -->
+  <div class="page" id="page-3">
+    <div class="panel">
+      <div class="panel-title">Review your order</div>
+      <div class="panel-sub">Everything look right? Confirm to book your pickup.</div>
+      <div id="review-body"></div>
+    </div>
+    <div class="notice">
+      <span style="font-size:15px;flex-shrink:0">🔒</span>
+      <span>Your booking is secure. We'll text you when the driver is 30 min away.</span>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <button class="btn-ghost" style="flex:0 0 auto;width:auto;padding:13px 20px" onclick="goPage(2)">&#8592; Back</button>
+      <button class="btn-brand" style="flex:1" onclick="confirmOrder()">✓&nbsp; Confirm Booking</button>
+    </div>
+  </div>
+
+  <!-- ══ SUCCESS ══ -->
+  <div class="page" id="page-success">
+    <div class="panel">
+      <div class="success-wrap">
+        <div class="success-ring">🎉</div>
+        <div class="success-title">You're all set!</div>
+        <div class="success-body">Your pickup is booked. Confirmation is on its way to your phone.</div>
+        <div class="ref-box">
+          Booking reference
+          <span class="ref-num" id="booking-ref">LLP-000000</span>
+        </div>
+        <button class="btn-brand" style="max-width:220px;margin:0 auto" onclick="resetApp()">Book another pickup</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const APARTMENTS = [
+  { name: 'Maple Towers',   addr: '120 Maple Ave'  },
+  { name: 'Elm Residences', addr: '45 Elm Street'  },
+  { name: 'The Pines',      addr: '88 Pine Road'   },
+  { name: 'Birch Gardens',  addr: '210 Birch Blvd' },
+];
+
+const SLOTS = [
+  { id:'fri-eve',  icon:'🌆', day:'Friday',   period:'Evening',   pickup:'6 – 8 pm',  delivery:'Sat morning, 8 – 10 am' },
+  { id:'sat-morn', icon:'🌅', day:'Saturday', period:'Morning',   pickup:'8 – 10 am', delivery:'Same day, 4 – 6 pm'     },
+  { id:'sat-noon', icon:'☀️', day:'Saturday', period:'Afternoon', pickup:'12 – 2 pm', delivery:'Same day, 6 – 8 pm'     },
+  { id:'sun-morn', icon:'🌅', day:'Sunday',   period:'Morning',   pickup:'8 – 10 am', delivery:'Same day, 4 – 6 pm'     },
+  { id:'sun-noon', icon:'☀️', day:'Sunday',   period:'Afternoon', pickup:'12 – 2 pm', delivery:'Same day, 6 – 8 pm'     },
+];
+
+const SVC_LABELS   = { wash:'Wash', dry:'Dry', ironing:'Ironing', dryclean:'Dry Clean', bedding:'Bedding', shoes:'Shoes' };
+const ADDON_LABELS = { softener:'Fabric softener', fragfree:'Fragrance-free', hypo:'Hypoallergenic', cold:'Cold wash', hangdry:'Hang dry' };
+const CHK = `<svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg>`;
+
+/* Build apartments */
+document.getElementById('apt-grid').innerHTML = APARTMENTS.map((a,i) => `
+  <label class="apt-opt">
+    <input type="radio" name="apt" value="${i}">
+    <div class="apt-box">
+      <div class="apt-badge">${CHK}</div>
+      <div class="apt-icon">🏢</div>
+      <div class="apt-name">${a.name}</div>
+      <div class="apt-addr">${a.addr}</div>
+    </div>
+  </label>`).join('');
+
+/* Build slots */
+document.getElementById('slot-grid').innerHTML = SLOTS.map(s => `
+  <label class="slot-opt">
+    <input type="radio" name="slot" value="${s.id}">
+    <div class="slot-box">
+      <div>
+        <div class="slot-day">${s.day} — ${s.period}</div>
+        <div><span class="pill pill-p">📦 Pickup ${s.pickup}</span></div>
+        <div><span class="pill pill-d">✅ Delivery ${s.delivery}</span></div>
+      </div>
+      <div class="slot-icon">${s.icon}</div>
+    </div>
+  </label>`).join('');
+
+function fmtPhone(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,10);
+  if (v.length >= 7)      el.value = '('+v.slice(0,3)+') '+v.slice(3,6)+'-'+v.slice(6);
+  else if (v.length >= 4) el.value = '('+v.slice(0,3)+') '+v.slice(3);
+  else if (v.length >= 1) el.value = '('+v;
+  else                    el.value = v;
+}
+
+function gv(id)   { return (document.getElementById(id)||{}).value?.trim()||''; }
+function gc(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el?el.value:null; }
+function se(id,s) { document.getElementById(id).classList.toggle('show',s); }
+function fe(id,s) { const el=document.getElementById(id); if(el) el.classList.toggle('is-err',s); }
+
+function validatePage1() {
+  let ok = true;
+  if (!gc('apt'))                                    { se('e-apt',true);   ok=false; } else se('e-apt',false);
+  if (!gv('f-unit'))                                 { se('e-unit',true);  fe('f-unit',true);  ok=false; } else { se('e-unit',false);  fe('f-unit',false); }
+  if (gv('f-phone').replace(/\D/g,'').length < 10)  { se('e-phone',true); fe('f-phone',true); ok=false; } else { se('e-phone',false); fe('f-phone',false); }
+  const em = gv('f-email');
+  if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)) { se('e-email',true); fe('f-email',true); ok=false; } else { se('e-email',false); fe('f-email',false); }
+  if (!gc('slot'))                                   { se('e-slot',true);  ok=false; } else se('e-slot',false);
+  return ok;
+}
+
+function validatePage2() {
+  const any = ['wash','dry','ironing','dryclean','bedding','shoes'].some(s=>document.getElementById('sv-'+s).checked);
+  se('e-services',!any);
+  return any;
+}
+
+function goPage(n) {
+  if (n===2 && !validatePage1()) { scrollUp(); return; }
+  if (n===3 && !validatePage2()) { scrollUp(); return; }
+  if (n===3) buildReview();
+  ['page-1','page-2','page-3','page-success'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  if (n==='success') {
+    document.getElementById('page-success').classList.add('active');
+    document.querySelector('.step-bar').style.display='none';
+  } else {
+    document.getElementById('page-'+n).classList.add('active');
+    [1,2,3].forEach(i=>{
+      const si=document.getElementById('si-'+i);
+      si.classList.remove('active','done');
+      if(i===n) si.classList.add('active');
+      if(i<n)  si.classList.add('done');
+    });
+  }
+  scrollUp();
+}
+
+function scrollUp() { window.scrollTo({top:0,behavior:'smooth'}); }
+
+function buildReview() {
+  const apt    = APARTMENTS[parseInt(gc('apt'))];
+  const unit   = gv('f-unit');
+  const buzzer = gv('f-buzzer');
+  const slot   = SLOTS.find(s=>s.id===gc('slot'));
+  const svcs   = ['wash','dry','ironing','dryclean','bedding','shoes'].filter(s=>document.getElementById('sv-'+s).checked).map(s=>SVC_LABELS[s]).join(', ');
+  const addons = ['softener','fragfree','hypo','cold','hangdry'].filter(a=>document.getElementById('ad-'+a).checked).map(a=>ADDON_LABELS[a]).join(', ')||'—';
+  const notes  = gv('f-notes')||'—';
+
+  const rows = [
+    ['Building', apt.name],
+    ['Unit',     unit+(buzzer?' · Buzzer: '+buzzer:'')],
+    ['Phone',    '+1 '+gv('f-phone')],
+    ['Email',    gv('f-email')||'—'],
+    ['Pickup',   slot.day+' '+slot.period+', '+slot.pickup],
+    ['Delivery', slot.delivery],
+    ['Services', svcs],
+    ['Add-ons',  addons],
+    ['Notes',    notes],
+  ];
+
+  document.getElementById('review-body').innerHTML = rows.map(([l,v])=>`
+    <div class="rv-row">
+      <span class="rv-label">${l}</span>
+      <span class="rv-val">${v}</span>
+    </div>`).join('');
+}
+
+// ── API endpoint — update this to your deployed URL ──
+const API_BASE = 'http://localhost:5000';
+
+async function confirmOrder() {
+  const confirmBtn = document.querySelector('#page-3 .btn-brand');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Saving…';
+
+  const aptIdx = parseInt(gc('apt'));
+  const apt    = APARTMENTS[aptIdx];
+  const slot   = SLOTS.find(s => s.id === gc('slot'));
+
+  const payload = {
+    apartmentName:    apt.name,
+    apartmentAddress: apt.addr,
+    unitNumber:       gv('f-unit'),
+    buzzerCode:       gv('f-buzzer') || null,
+    phone:            gv('f-phone'),
+    email:            gv('f-email') || null,
+    slotId:           slot.id,
+    slotDay:          slot.day,
+    slotPeriod:       slot.period,
+    pickupTime:       slot.pickup,
+    deliveryTime:     slot.delivery,
+    services: ['wash','dry','ironing','dryclean','bedding','shoes']
+                .filter(s => document.getElementById('sv-'+s).checked)
+                .map(s => SVC_LABELS[s]),
+    addons: ['softener','fragfree','hypo','cold','hangdry']
+              .filter(a => document.getElementById('ad-'+a).checked)
+              .map(a => ADDON_LABELS[a]),
+    notes: gv('f-notes') || null,
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/api/bookings`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.title || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    document.getElementById('booking-ref').textContent = data.reference;
+    goPage('success');
+
+  } catch (err) {
+    console.error('Booking failed:', err);
+    alert('Something went wrong: ' + err.message + '\nPlease try again.');
+    confirmBtn.disabled = false;
+    confirmBtn.innerHTML = '✓&nbsp; Confirm Booking';
+  }
+}
+
+function resetApp() { window.location.reload(); }
+</script>
+</body>
+</html>
