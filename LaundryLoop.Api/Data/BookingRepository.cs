@@ -23,12 +23,12 @@ public class BookingRepository
                 INSERT INTO Bookings (
                     Reference, ApartmentName, ApartmentAddress, UnitNumber, BuzzerCode,
                     Phone, Email, SlotId, SlotDay, SlotPeriod, PickupTime, DeliveryTime,
-                    Services, Addons, Notes, Status, CreatedAt, UpdatedAt
+                    LaundrySize, TotalCost, Notes, Status, CreatedAt, UpdatedAt
                 )
                 VALUES (
                     @Reference, @ApartmentName, @ApartmentAddress, @UnitNumber, @BuzzerCode,
                     @Phone, @Email, @SlotId, @SlotDay, @SlotPeriod, @PickupTime, @DeliveryTime,
-                    @Services, @Addons, @Notes, @Status, @CreatedAt, @UpdatedAt
+                    @LaundrySize, @TotalCost, @Notes, @Status, @CreatedAt, @UpdatedAt
                 );
                 SELECT CAST(SCOPE_IDENTITY() AS INT);
                 """;
@@ -37,6 +37,29 @@ public class BookingRepository
         var id = await conn.ExecuteScalarAsync<int>(sql, booking);
         booking.Id = id;
         return booking;
+    }
+
+    // CREATE CartItem
+    public async Task<CartItem> InsertCartItemAsync(CartItem cartItem)
+    {
+        const string sql = """
+                INSERT INTO CartItems (BookingId, ItemType, ItemName, Description, Price)
+                VALUES (@BookingId, @ItemType, @ItemName, @Description, @Price);
+                SELECT CAST(SCOPE_IDENTITY() AS INT);
+                """;
+
+        using var conn = Connect();
+        var id = await conn.ExecuteScalarAsync<int>(sql, cartItem);
+        cartItem.Id = id;
+        return cartItem;
+    }
+
+    // READ CartItems for booking
+    public async Task<IEnumerable<CartItem>> GetCartItemsAsync(int bookingId)
+    {
+        const string sql = "SELECT * FROM CartItems WHERE BookingId = @BookingId ORDER BY Id";
+        using var conn = Connect();
+        return await conn.QueryAsync<CartItem>(sql, new { BookingId = bookingId });
     }
 
     // READ — single by ID

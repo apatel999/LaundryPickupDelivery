@@ -131,7 +131,7 @@ tr:hover td { background: #fafafa; }
 .slot-day { font-weight: 500; white-space: nowrap; }
 .slot-time{ font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
 .delivery { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
-.services { font-size: 12px; color: var(--text); }
+.laundry-size { font-size: 12px; color: var(--text); }
 .addons   { font-size: 11px; color: var(--muted); margin-top: 2px; }
 .notes-cell { font-size: 12px; color: var(--muted); max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -145,6 +145,13 @@ tr:hover td { background: #fafafa; }
 .badge-PickedUp  { background: var(--status-pickedup);  color: var(--status-pickedup-t); }
 .badge-Delivered { background: var(--status-delivered); color: var(--status-delivered-t); }
 .badge-Cancelled { background: var(--status-cancelled); color: var(--status-cancelled-t); }
+
+/* ── DETAILS BUTTON ── */
+.btn-details {
+  padding: 4px 8px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: 4px; font-size: 11px; cursor: pointer; color: var(--text);
+}
+.btn-details:hover { background: var(--page); }
 
 /* ── STATUS DROPDOWN in table ── */
 .status-select {
@@ -180,18 +187,30 @@ tr:hover td { background: #fafafa; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 24px; right: 24px; z-index: 999;
-  background: var(--text); color: #fff; padding: 12px 18px;
-  border-radius: 10px; font-size: 13px; font-weight: 500;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  transform: translateY(80px); opacity: 0;
-  transition: all 0.3s ease; pointer-events: none;
+/* ── MODAL ── */
+.modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;
 }
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.success { background: #166534; }
-.toast.error   { background: #991b1b; }
+.modal-content {
+  background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border);
+  max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding: 18px 20px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { margin: 0; font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--text); }
+.modal-header button {
+  background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);
+  padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+}
+.modal-header button:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.detail-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.detail-item:last-child { border-bottom: none; font-weight: 600; color: var(--brand); }
+.detail-total { font-size: 16px; }
 
 /* ── PAGINATION ── */
 .pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-top: 0.5px solid var(--border); font-size: 13px; color: var(--muted); }
@@ -268,9 +287,11 @@ tr:hover td { background: #fafafa; }
             <th>Contact</th>
             <th onclick="toggleSort('slotDay')">Pickup <span class="sort-arrow" id="arrow-slotDay">↕</span></th>
             <th>Delivery</th>
-            <th>Services</th>
+            <th>Laundry Size</th>
+            <th>Total</th>
             <th>Notes</th>
             <th onclick="toggleSort('status')">Status <span class="sort-arrow" id="arrow-status">↕</span></th>
+            <th>Details</th>
           </tr>
         </thead>
         <tbody id="table-body">
@@ -291,15 +312,95 @@ tr:hover td { background: #fafafa; }
 
 <div class="toast" id="toast"></div>
 
-<script>
-const API_BASE  = 'https://localhost:64921';
-const PAGE_SIZE = 50;
+<!-- MODAL -->
+<div id="details-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Booking #<span id="modal-booking-id"></span> - Cost Breakdown</h3>
+      <button onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+  </div>
+</div>
 
-let currentPage   = 1;
-let currentFilter = null;
-let currentSort   = 'createdAt';
-let currentDir    = 'desc';
-let totalCount    = 0;
+<script>
+async function showDetails(bookingId) {
+  try {
+    // Fetch booking details and cart items in parallel
+    const [bookingRes, itemsRes] = await Promise.all([
+      fetch(`/api/bookings/${bookingId}`),
+      fetch(`/api/bookings/${bookingId}/cart-items`)
+    ]);
+    
+    if (!bookingRes.ok) throw new Error('Failed to load booking details');
+    if (!itemsRes.ok) throw new Error('Failed to load cost breakdown');
+    
+    const booking = await bookingRes.json();
+    const items = await itemsRes.json();
+    
+    document.getElementById('modal-booking-id').textContent = booking.reference;
+    const body = document.getElementById('modal-body');
+    
+    // Booking details section
+    body.innerHTML = `
+      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Booking Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+          <div><strong>Address:</strong> ${esc(booking.apartmentAddress)}, Unit ${esc(booking.unitNumber)}</div>
+          <div><strong>Building:</strong> ${esc(booking.apartmentName)}</div>
+          <div><strong>Phone:</strong> ${esc(booking.phone)}</div>
+          <div><strong>Email:</strong> ${booking.email ? esc(booking.email) : '—'}</div>
+          <div><strong>Pickup:</strong> ${esc(booking.slotDay)} — ${esc(booking.slotPeriod)} at ${esc(booking.pickupTime)}</div>
+          <div><strong>Delivery:</strong> ${esc(booking.deliveryTime)}</div>
+          <div><strong>Laundry Size:</strong> ${esc(booking.laundrySize)}</div>
+          <div><strong>Status:</strong> <span class="badge badge-${booking.status}">${booking.status}</span></div>
+        </div>
+        ${booking.notes ? `<div style="margin-top: 8px;"><strong>Notes:</strong> ${esc(booking.notes)}</div>` : ''}
+        ${booking.buzzerCode ? `<div style="margin-top: 4px;"><strong>Buzzer:</strong> ${esc(booking.buzzerCode)}</div>` : ''}
+      </div>
+      
+      <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Cost Breakdown</h4>
+    `;
+    
+    // Cost breakdown
+    body.innerHTML += items.map(item => 
+      `<div class="detail-item">
+        <span>${esc(item.itemName)}</span>
+        <span>$${item.price.toFixed(2)}</span>
+      </div>`
+    ).join('');
+    
+    const total = items.reduce((sum, item) => sum + item.price, 0);
+    body.innerHTML += `<div class="detail-item detail-total">
+      <span>Total</span>
+      <span>$${total.toFixed(2)}</span>
+    </div>`;
+    
+    document.getElementById('details-modal').style.display = 'flex';
+  } catch (err) {
+    alert('Error loading details: ' + err.message);
+  }
+}
+
+function closeModal() {
+  document.getElementById('details-modal').style.display = 'none';
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+(async () => {
+  const config = await fetch('/api/config').then(r => r.json());
+  const API_BASE = config.baseUrl;
+  const PAGE_SIZE = 50;
+
+  let currentPage   = 1;
+  let currentFilter = null;
+  let currentSort   = 'createdAt';
+  let currentDir    = 'desc';
+  let totalCount    = 0;
 
 /* ── Load bookings from API ── */
 async function loadBookings() {
@@ -359,7 +460,6 @@ function renderTable(items) {
   tbody.innerHTML = items.map((b, i) => {
     const routeNum = (currentPage - 1) * PAGE_SIZE + i + 1;
     const buzzer   = b.buzzerCode ? `<div class="buzzer">🔔 ${b.buzzerCode}</div>` : '';
-    const addons   = b.addons     ? `<div class="addons">+ ${b.addons}</div>` : '';
     const notes    = b.notes      ? `<div class="notes-cell" title="${esc(b.notes)}">${esc(b.notes)}</div>` : '<span style="color:#ccc">—</span>';
 
     return `<tr id="row-${b.id}">
@@ -383,9 +483,9 @@ function renderTable(items) {
         <div class="delivery">✅ ${esc(b.deliveryTime)}</div>
       </td>
       <td>
-        <div class="services">${esc(b.services)}</div>
-        ${addons}
+        <div class="laundry-size">${esc(b.laundrySize)}</div>
       </td>
+      <td>$${esc(b.totalCost)}</td>
       <td>${notes}</td>
       <td>
         <select class="status-select s-${b.status}"
@@ -394,6 +494,7 @@ function renderTable(items) {
           ${statusOptions(b.status)}
         </select>
       </td>
+      <td><button class="btn-details" onclick="showDetails(${b.id})">View</button></td>
     </tr>`;
   }).join('');
 }
@@ -497,11 +598,6 @@ function showLoading() {
     `<tr class="loading-row"><td colspan="10"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
 }
 
-function esc(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 let toastTimer;
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
@@ -513,8 +609,10 @@ function showToast(msg, type = '') {
 
 function showError(msg) { showToast(msg, 'error'); }
 
-/* ── Init ── */
-loadBookings();
+  /* ── Init ── */
+  loadBookings();
+
+})();
 </script>
 </body>
 </html>

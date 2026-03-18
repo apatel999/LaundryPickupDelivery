@@ -191,7 +191,7 @@
   <div class="step-bar-inner">
     <div class="step-item active" id="si-1"><div class="step-num"><span>1</span></div><div class="step-label">Your info</div></div>
     <div class="step-line"></div>
-    <div class="step-item" id="si-2"><div class="step-num"><span>2</span></div><div class="step-label">Services</div></div>
+    <div class="step-item" id="si-2"><div class="step-num"><span>2</span></div><div class="step-label">Laundry Size</div></div>
     <div class="step-line"></div>
     <div class="step-item" id="si-3"><div class="step-num"><span>3</span></div><div class="step-label">Review</div></div>
   </div>
@@ -246,33 +246,28 @@
         <div class="err-msg" id="e-slot">Please select a pickup slot.</div>
     </div>
 
-    <button class="btn-brand" onclick="goPage(2)">Continue to Services &rarr;</button>
+    <button class="btn-brand" onclick="goPage(2)">Continue to Laundry Size &rarr;</button>
   </div>
 
   <!-- ══ PAGE 2 ══ -->
   <div class="page" id="page-2">
 
     <div class="panel">
-      <div class="panel-title">What needs washing?</div>
-      <div class="panel-sub">Select all that apply. Final price confirmed at pickup.</div>
+      <div class="panel-title">Size of laundry</div>
+      <div class="panel-sub">Select the size of your laundry load.</div>
         <div class="svc-grid mb-1">
-          <label class="svc-opt"><input type="checkbox" id="sv-wash">   <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👕</span><span class="svc-name">Wash</span>      <span class="svc-price">$3.50 / lb</span></div></label>
-          <label class="svc-opt"><input type="checkbox" id="sv-dry">    <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">♨️</span><span class="svc-name">Dry</span>       <span class="svc-price">included w/ wash</span></div></label>
-          <label class="svc-opt"><input type="checkbox" id="sv-ironing"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👔</span><span class="svc-name">Ironing</span>   <span class="svc-price">$2.50 / item</span></div></label>
-          <label class="svc-opt"><input type="checkbox" id="sv-dryclean"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">🥼</span><span class="svc-name">Dry Clean</span><span class="svc-price">from $8 / item</span></div></label>
-          <label class="svc-opt"><input type="checkbox" id="sv-bedding"><div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">🛏️</span><span class="svc-name">Bedding</span>   <span class="svc-price">$6 / piece</span></div></label>
-          <label class="svc-opt"><input type="checkbox" id="sv-shoes">  <div class="svc-box"><div class="svc-badge"><svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg></div><span class="svc-em">👟</span><span class="svc-name">Shoes</span>     <span class="svc-price">$12 / pair</span></div></label>
+          <label class="svc-opt"><input type="radio" name="laundry-size" id="sz-small" value="small"> <div class="svc-box"><span class="svc-em">🧺</span><span class="svc-name">Small Load - 20 lbs - Single Person</span> <span class="svc-price">$10</span></div></label>
+          <label class="svc-opt"><input type="radio" name="laundry-size" id="sz-medium" value="medium"> <div class="svc-box"><span class="svc-em">🧺🧺</span><span class="svc-name">Medium Load - 30 lbs - Normal Household</span> <span class="svc-price">$15</span></div></label>
+          <label class="svc-opt"><input type="radio" name="laundry-size" id="sz-large" value="large"> <div class="svc-box"><span class="svc-em">🧺🧺🧺</span><span class="svc-name">Large Load - 40 lbs - Comforters & Blankets</span> <span class="svc-price">$18</span></div></label>
         </div>
-        <div class="err-msg" id="e-services">Please select at least one service.</div>
+        <div class="err-msg" id="e-size">Please select a laundry size.</div>
 
         <div class="divider"></div>
         <p class="f-label mb-2">Add-ons</p>
         <div class="d-flex flex-wrap gap-2 mb-3">
-          <label class="addon-opt"><input type="checkbox" id="ad-softener"><div class="addon-chip">Fabric softener</div></label>
-          <label class="addon-opt"><input type="checkbox" id="ad-fragfree"><div class="addon-chip">Fragrance-free</div></label>
-          <label class="addon-opt"><input type="checkbox" id="ad-hypo">    <div class="addon-chip">Hypoallergenic</div></label>
-          <label class="addon-opt"><input type="checkbox" id="ad-cold">    <div class="addon-chip">Cold wash</div></label>
-          <label class="addon-opt"><input type="checkbox" id="ad-hangdry"> <div class="addon-chip">Hang dry</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-detergent"><div class="addon-chip">Detergent - $1</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-softener"><div class="addon-chip">Fabric softener - $1</div></label>
+          <label class="addon-opt"><input type="checkbox" id="ad-own"><div class="addon-chip">I'll bring my own detergent & softener</div></label>
         </div>
 
         <label class="f-label">Notes <span class="opt">(optional)</span></label>
@@ -321,6 +316,9 @@
 </div>
 
 <script>
+let cartItems = []; // Global cart items
+let total = 0; // Global total cost
+
 const APARTMENTS = [
   { name: 'Maple Towers',   addr: '120 Maple Ave'  },
   { name: 'Elm Residences', addr: '45 Elm Street'  },
@@ -336,9 +334,20 @@ const SLOTS = [
   { id:'sun-noon', icon:'☀️', day:'Sunday',   period:'Afternoon', pickup:'12 – 2 pm', delivery:'Same day, 6 – 8 pm'     },
 ];
 
-const SVC_LABELS   = { wash:'Wash', dry:'Dry', ironing:'Ironing', dryclean:'Dry Clean', bedding:'Bedding', shoes:'Shoes' };
-const ADDON_LABELS = { softener:'Fabric softener', fragfree:'Fragrance-free', hypo:'Hypoallergenic', cold:'Cold wash', hangdry:'Hang dry' };
+const SIZE_LABELS  = { small: 'Small Load - 20 lbs - Single Person - $10', medium: 'Medium Load - 30 lbs - Normal Household - $15', large: 'Large Load - 40 lbs - Comforters & Blankets - $18' };
+const ADDON_LABELS = { detergent: 'Detergent - $1', softener: 'Fabric softener - $1', own: 'Bring own detergent & softener' };
 const CHK = `<svg viewBox="0 0 10 8"><path d="M1 4l3 3 5-6"/></svg>`;
+
+// Handle own detergent option
+document.getElementById('ad-own').addEventListener('change', function() {
+  const own = this.checked;
+  document.getElementById('ad-detergent').disabled = own;
+  document.getElementById('ad-softener').disabled = own;
+  if (own) {
+    document.getElementById('ad-detergent').checked = false;
+    document.getElementById('ad-softener').checked = false;
+  }
+});
 
 /* Build apartments */
 document.getElementById('apt-grid').innerHTML = APARTMENTS.map((a,i) => `
@@ -391,9 +400,9 @@ function validatePage1() {
 }
 
 function validatePage2() {
-  const any = ['wash','dry','ironing','dryclean','bedding','shoes'].some(s=>document.getElementById('sv-'+s).checked);
-  se('e-services',!any);
-  return any;
+  const size = gc('laundry-size');
+  se('e-size', !size);
+  return !!size;
 }
 
 function goPage(n) {
@@ -423,9 +432,36 @@ function buildReview() {
   const unit   = gv('f-unit');
   const buzzer = gv('f-buzzer');
   const slot   = SLOTS.find(s=>s.id===gc('slot'));
-  const svcs   = ['wash','dry','ironing','dryclean','bedding','shoes'].filter(s=>document.getElementById('sv-'+s).checked).map(s=>SVC_LABELS[s]).join(', ');
-  const addons = ['softener','fragfree','hypo','cold','hangdry'].filter(a=>document.getElementById('ad-'+a).checked).map(a=>ADDON_LABELS[a]).join(', ')||'—';
+  const size   = SIZE_LABELS[gc('laundry-size')];
+  const addons = ['detergent','softener','own'].filter(a=>document.getElementById('ad-'+a).checked).map(a=>ADDON_LABELS[a]).join(', ')||'—';
   const notes  = gv('f-notes')||'—';
+
+  // Calculate costs
+  const sizeDesc = size.split(' - $')[0];
+  const sizePrice = parseFloat(size.split(' - $')[1]);
+  let addonCost = 0;
+  const addonList = addons === '—' ? [] : addons.split(', ');
+  addonList.forEach(a => {
+    const parts = a.split(' - $');
+    if (parts.length > 1) {
+      const price = parseFloat(parts[1]);
+      addonCost += price;
+    }
+  });
+  const addonNames = addonList.map(a => a.split(' - $')[0]).join(', ') || '—';
+  const deliveryFee = 3;
+  total = sizePrice + addonCost + deliveryFee;
+
+  // Build cart items
+  cartItems = [];
+  cartItems.push({ itemType: 'laundry', itemName: sizeDesc, description: sizeDesc, price: sizePrice });
+  addonList.forEach(a => {
+    const parts = a.split(' - $');
+    if (parts.length > 1) {
+      cartItems.push({ itemType: 'addon', itemName: parts[0], description: a, price: parseFloat(parts[1]) });
+    }
+  });
+  cartItems.push({ itemType: 'delivery', itemName: 'Delivery Fee', description: 'Pickup and delivery service', price: deliveryFee });
 
   const rows = [
     ['Building', apt.name],
@@ -434,8 +470,12 @@ function buildReview() {
     ['Email',    gv('f-email')||'—'],
     ['Pickup',   slot.day+' '+slot.period+', '+slot.pickup],
     ['Delivery', slot.delivery],
-    ['Services', svcs],
-    ['Add-ons',  addons],
+    ['Laundry Size', sizeDesc],
+    ['Laundry Cost', '$' + sizePrice.toFixed(2)],
+    ['Add-ons',  addonNames],
+    ['Add-on Cost', addonCost > 0 ? '$' + addonCost.toFixed(2) : '—'],
+    ['Delivery Fee', '$' + deliveryFee.toFixed(2)],
+    ['Total Cost', '$' + total.toFixed(2)],
     ['Notes',    notes],
   ];
 
@@ -446,8 +486,9 @@ function buildReview() {
     </div>`).join('');
 }
 
-// ── API endpoint — update this to your deployed URL ──
-const API_BASE = 'https://localhost:64921';
+// ── API endpoint — fetched dynamically ──
+let API_BASE;
+fetch('/api/config').then(r => r.json()).then(c => API_BASE = c.baseUrl);
 
 async function confirmOrder() {
   const confirmBtn = document.querySelector('#page-3 .btn-brand');
@@ -470,12 +511,9 @@ async function confirmOrder() {
     slotPeriod:       slot.period,
     pickupTime:       slot.pickup,
     deliveryTime:     slot.delivery,
-    services: ['wash','dry','ironing','dryclean','bedding','shoes']
-                .filter(s => document.getElementById('sv-'+s).checked)
-                .map(s => SVC_LABELS[s]),
-    addons: ['softener','fragfree','hypo','cold','hangdry']
-              .filter(a => document.getElementById('ad-'+a).checked)
-              .map(a => ADDON_LABELS[a]),
+    laundrySize: SIZE_LABELS[gc('laundry-size')],
+    cartItems: cartItems,
+    totalCost: total,
     notes: gv('f-notes') || null,
   };
 

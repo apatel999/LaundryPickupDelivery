@@ -1,5 +1,10 @@
 # LaundryLoop — .NET Core API
 
+## Database Setup
+
+1. Run `migrations/setup-database.sql` to create the initial database schema
+2. Run `migrations/20260316_000000_add_cart_items.sql` to add shopping cart functionality
+
 ## Project structure
 
 ```
@@ -97,8 +102,13 @@ const API_BASE = 'http://localhost:5000';
   "slotPeriod":       "Morning",
   "pickupTime":       "8 - 10 am",
   "deliveryTime":     "Same day, 4 - 6 pm",
-  "services":         ["Wash", "Ironing"],
-  "addons":           ["Fabric softener"],
+  "laundrySize":      "Small Load - 20 lbs - Single Person - $10",
+  "cartItems": [
+    { "itemType": "laundry", "itemName": "Small Load - 20 lbs - Single Person", "description": "Small Load - 20 lbs - Single Person", "price": 10.00 },
+    { "itemType": "addon", "itemName": "Detergent", "description": "Detergent - $1", "price": 1.00 },
+    { "itemType": "delivery", "itemName": "Delivery Fee", "description": "Pickup and delivery service", "price": 3.00 }
+  ],
+  "totalCost":        14.00,
   "notes":            "Leave with concierge"
 }
 ```

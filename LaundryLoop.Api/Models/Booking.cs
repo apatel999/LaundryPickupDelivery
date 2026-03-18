@@ -46,13 +46,12 @@ public class Booking
     [Required, MaxLength(100)]
     public string DeliveryTime { get; set; } = string.Empty;
 
-    // Services
+    // Laundry Size
     [Required, MaxLength(200)]
-    public string Services { get; set; } = string.Empty;
+    public string LaundrySize { get; set; } = string.Empty;
 
-    // Add-ons
-    [MaxLength(300)]
-    public string? Addons { get; set; }
+    [Required]
+    public decimal TotalCost { get; set; }
 
     [MaxLength(1000)]
     public string? Notes { get; set; }

@@ -1,9 +1,17 @@
+using LaundryLoop.Api;
 using LaundryLoop.Api.Data;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Services ──────────────────────────────────
 builder.Services.AddControllers();
+
+// Authentication
+builder.Services.AddAuthentication("BasicAuthentication")
+    .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
+
+builder.Services.AddAuthorization();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -31,7 +39,24 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("FrontendPolicy");
 app.UseStaticFiles();
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Protect admin page
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/laundryloop-admin.html"))
+    {
+        var result = await context.AuthenticateAsync("BasicAuthentication");
+        if (!result.Succeeded)
+        {
+            await context.ChallengeAsync("BasicAuthentication");
+            return;
+        }
+    }
+    await next();
+});
+
 app.MapControllers();
 
 app.Run();

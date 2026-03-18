@@ -1,6 +1,7 @@
 
 using LaundryLoop.Api.Data;
 using LaundryLoop.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LaundryLoop.Api.Controllers;
@@ -39,8 +40,8 @@ public class BookingsController : ControllerBase
             SlotPeriod       = req.SlotPeriod,
             PickupTime       = req.PickupTime,
             DeliveryTime     = req.DeliveryTime,
-            Services         = string.Join(",", req.Services),
-            Addons           = req.Addons?.Count > 0 ? string.Join(",", req.Addons) : null,
+            LaundrySize      = req.LaundrySize,
+            TotalCost        = req.TotalCost,
             Notes            = req.Notes?.Trim(),
             Status           = "Pending",
             CreatedAt        = DateTime.UtcNow,
@@ -48,6 +49,20 @@ public class BookingsController : ControllerBase
         };
 
         await _repo.InsertAsync(booking);
+
+        // Insert cart items
+        foreach (var item in req.CartItems)
+        {
+            var cartItem = new CartItem
+            {
+                BookingId = booking.Id,
+                ItemType = item.ItemType,
+                ItemName = item.ItemName,
+                Description = item.Description,
+                Price = item.Price
+            };
+            await _repo.InsertCartItemAsync(cartItem);
+        }
 
         _logger.LogInformation("Booking created: {Ref} — {Apt} unit {Unit}",
             booking.Reference, booking.ApartmentName, booking.UnitNumber);
@@ -64,6 +79,7 @@ public class BookingsController : ControllerBase
     }
 
     // GET /api/bookings?page=1&pageSize=50&status=Pending&sortBy=apartmentAddress&sortDir=asc
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int page       = 1,
@@ -85,6 +101,7 @@ public class BookingsController : ControllerBase
 
     // PATCH /api/bookings/{id}/status
     // Body: { "status": "PickedUp" }
+    [Authorize]
     [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateStatusRequest req)
     {
@@ -97,6 +114,7 @@ public class BookingsController : ControllerBase
     }
 
     // DELETE /api/bookings/{id}
+    [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
@@ -124,10 +142,29 @@ public class BookingsController : ControllerBase
         SlotPeriod       = b.SlotPeriod,
         PickupTime       = b.PickupTime,
         DeliveryTime     = b.DeliveryTime,
-        Services         = b.Services,
-        Addons           = b.Addons,
+        LaundrySize     = b.LaundrySize,
+        TotalCost        = b.TotalCost,
         Notes            = b.Notes,
     };
+
+
+    // GET /api/bookings/{id}/cart-items
+    [HttpGet("{id:int}/cart-items")]
+    public async Task<IActionResult> GetCartItems(int id)
+    {
+        var items = await _repo.GetCartItemsAsync(id);
+        return Ok(items);
+    }
+
+    // ─────────────────────────────────────────
+    // GET /api/config
+    // ─────────────────────────────────────────
+    [HttpGet("/api/config")]
+    public IActionResult GetConfig([FromServices] IConfiguration config)
+    {
+        var baseUrl = config["BaseUrl"] ?? "http://localhost:5000";
+        return Ok(new { baseUrl });
+    }
 }
 
 public record UpdateStatusRequest(string Status);

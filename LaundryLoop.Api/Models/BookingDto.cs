@@ -6,7 +6,15 @@ using System.ComponentModel.DataAnnotations;
 namespace LaundryLoop.Api.Models;
 
 // Inbound from the HTML form
+public class CartItemDto
+{
+    public string ItemType { get; set; } = string.Empty;
+    public string ItemName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Price { get; set; }
+}
 public class CreateBookingRequest
+
 {
     [Required]
     public string ApartmentName { get; set; } = string.Empty;
@@ -40,10 +48,14 @@ public class CreateBookingRequest
     [Required]
     public string DeliveryTime { get; set; } = string.Empty;
 
-    [Required, MinLength(1)]
-    public List<string> Services { get; set; } = new();
+    [Required]
+    public string LaundrySize { get; set; } = string.Empty;
 
-    public List<string>? Addons { get; set; }
+    [Required]
+    public List<CartItemDto> CartItems { get; set; } = new();
+
+    [Required]
+    public decimal TotalCost { get; set; }
 
     public string? Notes { get; set; }
 }
@@ -69,7 +81,7 @@ public class BookingResponse
     public string PickupTime { get; set; } = string.Empty;
     public string DeliveryTime { get; set; } = string.Empty;
 
-    public string Services { get; set; } = string.Empty;
-    public string? Addons { get; set; }
+    public string LaundrySize { get; set; } = string.Empty;
+    public decimal TotalCost { get; set; }
     public string? Notes { get; set; }
 }
