@@ -1,0 +1,482 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --blue: #378ADD; --blue-light: #E6F1FB; --blue-dark: #0C447C;
+    --teal: #1D9E75; --teal-light: #E1F5EE; --teal-dark: #085041;
+    --gray-light: #F1EFE8; --gray-mid: #888780; --gray-dark: #2C2C2A;
+    --amber: #EF9F27; --amber-light: #FAEEDA;
+    --red: #E24B4A; --red-light: #FCEBEB;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--color-background-tertiary, #f5f4f0); min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  .phone-frame {
+    width: 375px; background: var(--color-background-primary, #fff);
+    border-radius: 40px; border: 0.5px solid var(--color-border-tertiary);
+    overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    min-height: 700px; display: flex; flex-direction: column; position: relative;
+  }
+  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen.active { display: flex; }
+
+  /* Top bar */
+  .topbar { padding: 20px 20px 8px; display: flex; align-items: center; justify-content: space-between; }
+  .topbar-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--color-text-primary); }
+  .back-btn { display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; color: var(--blue); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; padding: 6px 0; }
+  .back-btn svg { width: 16px; height: 16px; }
+
+  /* Help button */
+  .help-btn {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--blue-light);
+    border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--blue); font-size: 15px; font-weight: 600; transition: background 0.15s;
+  }
+  .help-btn:hover { background: #B5D4F4; }
+
+  /* Help modal overlay */
+  .help-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; border-radius: 40px; }
+  .help-overlay.show { display: flex; }
+  .help-card { background: var(--color-background-primary, #fff); border-radius: 20px; padding: 28px 24px; width: 300px; text-align: center; }
+  .help-card h3 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 8px; color: var(--color-text-primary); }
+  .help-card p { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 20px; }
+  .help-actions { display: flex; gap: 10px; }
+  .help-actions a {
+    flex: 1; padding: 12px 8px; border-radius: 12px; text-decoration: none;
+    font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .call-btn { background: var(--teal-light); color: var(--teal-dark); }
+  .text-btn { background: var(--blue-light); color: var(--blue-dark); }
+  .help-close { margin-top: 14px; background: none; border: none; color: var(--gray-mid); font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+  /* Progress dots */
+  .progress { display: flex; gap: 6px; padding: 0 20px 16px; }
+  .dot { height: 4px; border-radius: 2px; transition: all 0.3s; }
+  .dot.active { background: var(--blue); flex: 2; }
+  .dot.done { background: var(--teal); flex: 1; }
+  .dot.inactive { background: var(--color-border-tertiary, #ddd); flex: 1; }
+
+  /* Content area */
+  .content { padding: 8px 20px 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Form elements */
+  .field-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .field-input {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    border: 0.5px solid var(--color-border-secondary, rgba(0,0,0,0.2));
+    background: var(--color-background-secondary, #f8f8f6);
+    font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--color-text-primary);
+    outline: none; transition: border-color 0.15s;
+  }
+  .field-input:focus { border-color: var(--blue); }
+  .field-input::placeholder { color: var(--color-text-tertiary, #aaa); }
+  .field-group { display: flex; flex-direction: column; }
+
+  /* Laundry size cards */
+  .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .size-card {
+    border: 0.5px solid var(--color-border-tertiary); border-radius: 14px;
+    padding: 16px 12px; cursor: pointer; transition: all 0.15s; text-align: center;
+    background: var(--color-background-secondary, #f8f8f6);
+  }
+  .size-card.selected { border-color: var(--blue); border-width: 1.5px; background: var(--blue-light); }
+  .size-card .size-icon { font-size: 28px; margin-bottom: 6px; }
+  .size-card .size-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .size-card .size-desc { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .size-card .size-price { font-size: 16px; font-weight: 600; color: var(--blue); margin-top: 6px; }
+
+  /* Detergent options */
+  .option-row {
+    display: flex; align-items: center; padding: 12px 14px; border-radius: 12px;
+    border: 0.5px solid var(--color-border-tertiary); cursor: pointer; gap: 12px;
+    background: var(--color-background-secondary, #f8f8f6); transition: all 0.15s;
+  }
+  .option-row.selected { border-color: var(--blue); border-width: 1.5px; background: var(--blue-light); }
+  .option-row .opt-label { flex: 1; font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .option-row .opt-sub { font-size: 12px; color: var(--color-text-secondary); }
+  .radio-circle { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary, #ccc); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .radio-circle.checked { border-color: var(--blue); background: var(--blue); }
+  .radio-circle.checked::after { content: ''; width: 7px; height: 7px; background: #fff; border-radius: 50%; }
+
+  /* CTA button */
+  .cta-wrap { padding: 0 20px 28px; }
+  .cta-btn {
+    width: 100%; padding: 16px; border-radius: 16px; border: none;
+    background: var(--blue); color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .cta-btn:hover { opacity: 0.9; }
+  .cta-btn.teal { background: var(--teal); }
+  .cta-btn.amber { background: #BA7517; }
+
+  /* Section heading */
+  .section-head { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 2px; }
+
+  /* Review screen */
+  .review-card { background: var(--color-background-secondary, #f8f8f6); border-radius: 16px; padding: 16px; border: 0.5px solid var(--color-border-tertiary); }
+  .review-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .review-row:last-child { border-bottom: none; }
+  .review-label { font-size: 13px; color: var(--color-text-secondary); }
+  .review-val { font-size: 14px; font-weight: 500; color: var(--color-text-primary); text-align: right; max-width: 60%; }
+  .total-row { display: flex; justify-content: space-between; padding-top: 4px; }
+  .total-label { font-size: 15px; font-weight: 600; color: var(--color-text-primary); }
+  .total-price { font-size: 20px; font-weight: 600; color: var(--blue); }
+
+  /* Hero strip on page 1 */
+  .hero-strip { margin: 0 20px; background: var(--teal-light); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+  .hero-text h2 { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--teal-dark); }
+  .hero-text p { font-size: 12px; color: #0F6E56; margin-top: 2px; }
+
+  .success-check { width: 56px; height: 56px; background: var(--teal-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+</style>
+
+<div class="phone-frame">
+
+  <!-- Help overlay (shared across screens) -->
+  <div class="help-overlay" id="helpOverlay">
+    <div class="help-card">
+      <div style="font-size:32px; margin-bottom:10px;">📞</div>
+      <h3>Need help?</h3>
+      <p>Our team is available 7 days a week, 7am – 10pm.</p>
+      <div style="background: var(--color-background-secondary); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size:20px; font-weight:600; color: var(--blue); letter-spacing:1px;">1-800-WASH-NOW</div>
+      </div>
+      <div class="help-actions">
+        <a href="tel:18009274669" class="call-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          Call us
+        </a>
+        <a href="sms:18009274669" class="text-btn">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          Text us
+        </a>
+      </div>
+      <button class="help-close" onclick="document.getElementById('helpOverlay').classList.remove('show')">Close</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SCREEN 1 ═══════════════════════════════ -->
+  <div class="screen active" id="screen1">
+    <div class="topbar">
+      <span class="topbar-title">Schedule pickup</span>
+      <button class="help-btn" onclick="document.getElementById('helpOverlay').classList.add('show')">?</button>
+    </div>
+    <div class="progress">
+      <div class="dot active"></div>
+      <div class="dot inactive"></div>
+      <div class="dot inactive"></div>
+    </div>
+    <div class="hero-strip">
+      <div style="font-size:30px;">🧺</div>
+      <div class="hero-text">
+        <h2>Fresh laundry, delivered</h2>
+        <p>Pickup in as little as 2 hours</p>
+      </div>
+    </div>
+    <div class="content" style="margin-top:14px;">
+      <div class="field-group">
+        <div class="field-label">Pickup address</div>
+        <input class="field-input" id="addr" type="text" placeholder="123 Main St, Toronto ON" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Unit / Apartment (optional)</div>
+        <input class="field-input" id="unit" type="text" placeholder="Apt 4B" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Delivery instructions</div>
+        <textarea class="field-input" id="instructions" rows="3" placeholder="Leave at door, ring bell, etc." style="resize:none;"></textarea>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Phone number</div>
+        <input class="field-input" id="phone" type="tel" placeholder="+1 (416) 555-0100" />
+      </div>
+      <div class="field-group">
+        <div class="field-label">Email</div>
+        <input class="field-input" id="email" type="email" placeholder="you@email.com" />
+      </div>
+    </div>
+    <div class="cta-wrap">
+      <button class="cta-btn" onclick="goTo(2)">
+        Continue
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SCREEN 2 ═══════════════════════════════ -->
+  <div class="screen" id="screen2">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo(1)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Back
+      </button>
+      <button class="help-btn" onclick="document.getElementById('helpOverlay').classList.add('show')">?</button>
+    </div>
+    <div class="progress">
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+      <div class="dot inactive"></div>
+    </div>
+    <div class="content">
+      <div>
+        <div class="section-head" style="margin-bottom:10px;">Select laundry size</div>
+        <div class="size-grid" id="sizeGrid">
+          <div class="size-card selected" data-size="small" data-price="19.99" onclick="selectSize(this)">
+            <div class="size-icon">👕</div>
+            <div class="size-name">Small bag</div>
+            <div class="size-desc">Up to 10 lbs</div>
+            <div class="size-price">$19.99</div>
+          </div>
+          <div class="size-card" data-size="medium" data-price="29.99" onclick="selectSize(this)">
+            <div class="size-icon">🧳</div>
+            <div class="size-name">Medium bag</div>
+            <div class="size-desc">Up to 20 lbs</div>
+            <div class="size-price">$29.99</div>
+          </div>
+          <div class="size-card" data-size="large" data-price="39.99" onclick="selectSize(this)">
+            <div class="size-icon">🛍</div>
+            <div class="size-name">Large bag</div>
+            <div class="size-desc">Up to 30 lbs</div>
+            <div class="size-price">$39.99</div>
+          </div>
+          <div class="size-card" data-size="custom" data-price="0" onclick="selectSize(this)">
+            <div class="size-icon">⚖️</div>
+            <div class="size-name">Custom size</div>
+            <div class="size-desc">Price per lb</div>
+            <div class="size-price">$2.50/lb</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="customWrap" style="display:none;">
+        <div class="field-label">Estimated weight (lbs)</div>
+        <input class="field-input" id="customLbs" type="number" placeholder="Enter lbs" min="1" oninput="updateCustomPrice()" />
+      </div>
+
+      <div>
+        <div class="section-head" style="margin-bottom:8px;">Detergent</div>
+        <div style="display:flex; flex-direction:column; gap:8px;" id="detGroup">
+          <div class="option-row selected" data-det="standard" onclick="selectDet(this)">
+            <div class="radio-circle checked" id="det0"></div>
+            <div><div class="opt-label">Standard (free)</div><div class="opt-sub">Tide Original — included</div></div>
+          </div>
+          <div class="option-row" data-det="sensitive" onclick="selectDet(this)">
+            <div class="radio-circle" id="det1"></div>
+            <div><div class="opt-label">Sensitive skin +$2</div><div class="opt-sub">Fragrance & dye free</div></div>
+          </div>
+          <div class="option-row" data-det="eco" onclick="selectDet(this)">
+            <div class="radio-circle" id="det2"></div>
+            <div><div class="opt-label">Eco / natural +$3</div><div class="opt-sub">Plant-based, biodegradable</div></div>
+          </div>
+          <div class="option-row" data-det="own" onclick="selectDet(this)">
+            <div class="radio-circle" id="det3"></div>
+            <div><div class="opt-label">I'll provide my own</div><div class="opt-sub">Include in your bag</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <div class="field-label">Additional instructions (optional)</div>
+        <textarea class="field-input" id="addInstr" rows="3" placeholder="Cold wash, hang dry delicates, no fabric softener…" style="resize:none;"></textarea>
+      </div>
+    </div>
+    <div class="cta-wrap">
+      <button class="cta-btn teal" onclick="goTo(3)">
+        Review order
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SCREEN 3 ═══════════════════════════════ -->
+  <div class="screen" id="screen3">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo(2)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        Back
+      </button>
+      <button class="help-btn" onclick="document.getElementById('helpOverlay').classList.add('show')">?</button>
+    </div>
+    <div class="progress">
+      <div class="dot done"></div>
+      <div class="dot done"></div>
+      <div class="dot active"></div>
+    </div>
+    <div class="content">
+      <div style="font-family: 'Playfair Display', serif; font-size:22px; color: var(--color-text-primary); margin-bottom:2px;">Review your order</div>
+      <div style="font-size:13px; color: var(--color-text-secondary); margin-bottom:4px;">Confirm everything looks right before we confirm pickup.</div>
+
+      <div>
+        <div class="section-head" style="margin-bottom:8px;">📍 Pickup address</div>
+        <div class="review-card">
+          <div class="review-row">
+            <span class="review-label">Address</span>
+            <span class="review-val" id="rv-addr">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Unit</span>
+            <span class="review-val" id="rv-unit">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Instructions</span>
+            <span class="review-val" id="rv-instr">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Phone</span>
+            <span class="review-val" id="rv-phone">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Email</span>
+            <span class="review-val" id="rv-email">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-head" style="margin-bottom:8px;">🧺 Laundry selection</div>
+        <div class="review-card">
+          <div class="review-row">
+            <span class="review-label">Bag size</span>
+            <span class="review-val" id="rv-size">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Detergent</span>
+            <span class="review-val" id="rv-det">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Special notes</span>
+            <span class="review-val" id="rv-notes">—</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-head" style="margin-bottom:8px;">💳 Order summary</div>
+        <div class="review-card">
+          <div class="review-row">
+            <span class="review-label">Laundry service</span>
+            <span class="review-val" id="rv-base">—</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Detergent upgrade</span>
+            <span class="review-val" id="rv-det-fee">$0.00</span>
+          </div>
+          <div class="review-row">
+            <span class="review-label">Pickup & delivery</span>
+            <span class="review-val" style="color:var(--teal);">Free</span>
+          </div>
+          <div class="review-row" style="padding-top:10px; margin-top:2px; border-top: 0.5px solid var(--color-border-tertiary); border-bottom:none;">
+            <span style="font-size:15px; font-weight:600; color:var(--color-text-primary);">Total</span>
+            <span style="font-size:20px; font-weight:600; color:var(--blue);" id="rv-total">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cta-wrap">
+      <button class="cta-btn" style="background:var(--teal);" onclick="placeOrder()">
+        Confirm order
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════ SCREEN 4 (success) ═══════════════════════════════ -->
+  <div class="screen" id="screen4" style="justify-content:center; align-items:center; text-align:center; padding:32px 28px;">
+    <div class="topbar" style="position:absolute; top:0; right:0; padding:20px;">
+      <button class="help-btn" style="position:absolute; right:20px; top:20px;" onclick="document.getElementById('helpOverlay').classList.add('show')">?</button>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; gap:16px;">
+      <div class="success-check">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div style="font-family:'Playfair Display',serif; font-size:24px; color:var(--color-text-primary);">Order confirmed!</div>
+      <div style="font-size:14px; color:var(--color-text-secondary); line-height:1.6;">We'll send a confirmation to your email. Your driver will arrive within 2 hours.</div>
+      <div style="background:var(--teal-light); border-radius:14px; padding:16px 20px; width:100%;">
+        <div style="font-size:12px; color:#0F6E56; margin-bottom:4px;">Estimated pickup</div>
+        <div style="font-size:18px; font-weight:600; color:var(--teal-dark);">Today, 2:00 – 4:00 PM</div>
+      </div>
+      <div style="font-size:13px; color:var(--color-text-secondary);">Questions? Call or text us anytime.</div>
+      <div style="display:flex; gap:10px; width:100%;">
+        <a href="tel:18009274669" style="flex:1;padding:12px;border-radius:12px;background:var(--teal-light);color:var(--teal-dark);text-decoration:none;font-size:13px;font-weight:500;text-align:center;">📞 Call</a>
+        <a href="sms:18009274669" style="flex:1;padding:12px;border-radius:12px;background:var(--blue-light);color:var(--blue-dark);text-decoration:none;font-size:13px;font-weight:500;text-align:center;">💬 Text</a>
+      </div>
+      <button onclick="goTo(1); resetForm();" style="background:none;border:none;color:var(--gray-mid);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;">Place another order</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let selectedSize = {name:'Small bag',price:19.99,label:'Small bag (up to 10 lbs)'};
+let selectedDet = {name:'Standard (free)',fee:0};
+
+function goTo(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen'+n).classList.add('active');
+  if(n===3) populateReview();
+}
+
+function selectSize(el) {
+  document.querySelectorAll('#sizeGrid .size-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const size = el.dataset.size;
+  const price = parseFloat(el.dataset.price);
+  const name = el.querySelector('.size-name').textContent;
+  const desc = el.querySelector('.size-desc').textContent;
+  document.getElementById('customWrap').style.display = size==='custom' ? 'flex' : 'none';
+  document.getElementById('customWrap').style.flexDirection = 'column';
+  document.getElementById('customWrap').style.gap = '6px';
+  selectedSize = {name, price: size==='custom'?0:price, label: name+' ('+desc+')', size};
+}
+
+function updateCustomPrice() {
+  const lbs = parseFloat(document.getElementById('customLbs').value)||0;
+  selectedSize.price = lbs * 2.50;
+  selectedSize.label = 'Custom ('+lbs+' lbs)';
+}
+
+function selectDet(el) {
+  document.querySelectorAll('#detGroup .option-row').forEach((r,i)=>{
+    r.classList.remove('selected');
+    document.getElementById('det'+i).classList.remove('checked');
+  });
+  const idx = [...document.querySelectorAll('#detGroup .option-row')].indexOf(el);
+  el.classList.add('selected');
+  document.getElementById('det'+idx).classList.add('checked');
+  const fees = [0,2,3,0];
+  const names = ['Standard (Tide)','Sensitive skin','Eco / natural','Provided by me'];
+  selectedDet = {name:names[idx], fee:fees[idx]};
+}
+
+function populateReview() {
+  const get = id => document.getElementById(id).value.trim() || '—';
+  document.getElementById('rv-addr').textContent = get('addr');
+  document.getElementById('rv-unit').textContent = get('unit');
+  document.getElementById('rv-instr').textContent = get('instructions');
+  document.getElementById('rv-phone').textContent = get('phone');
+  document.getElementById('rv-email').textContent = get('email');
+  document.getElementById('rv-size').textContent = selectedSize.label;
+  document.getElementById('rv-det').textContent = selectedDet.name;
+  document.getElementById('rv-notes').textContent = document.getElementById('addInstr').value.trim()||'None';
+  const base = selectedSize.price;
+  const detFee = selectedDet.fee;
+  const total = base + detFee;
+  document.getElementById('rv-base').textContent = '$'+base.toFixed(2);
+  document.getElementById('rv-det-fee').textContent = detFee>0 ? '+$'+detFee.toFixed(2) : '$0.00';
+  document.getElementById('rv-total').textContent = '$'+total.toFixed(2);
+}
+
+function placeOrder() { goTo(4); }
+
+function resetForm() {
+  ['addr','unit','instructions','phone','email','addInstr','customLbs'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  selectedSize = {name:'Small bag',price:19.99,label:'Small bag (up to 10 lbs)'};
+  selectedDet = {name:'Standard (free)',fee:0};
+  document.querySelectorAll('#sizeGrid .size-card').forEach((c,i)=>{
+    c.classList.toggle('selected',i===0);
+  });
+  selectDet(document.querySelector('#detGroup .option-row'));
+}
+</script>
