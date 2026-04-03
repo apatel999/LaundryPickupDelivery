@@ -29,11 +29,10 @@ class BookingsController
             return $this->json($response, ['error' => 'Invalid JSON body'], 400);
         }
 
-        // Validate required fields — mirrors [Required] annotations on CreateBookingRequest
+        // Validate required fields
         $required = [
-            'apartmentName', 'apartmentAddress', 'unitNumber',
-            'phone', 'slotId', 'slotDay', 'slotPeriod',
-            'pickupTime', 'deliveryTime', 'laundrySize', 'totalCost',
+            'apartmentAddress',
+            'phone', 'pickupTime', 'deliveryTime', 'laundrySize', 'totalCost',
         ];
 
         $errors = [];
@@ -55,15 +54,15 @@ class BookingsController
 
         $booking                  = new Booking();
         $booking->reference        = $this->generateReference();
-        $booking->apartmentName    = trim($body['apartmentName']);
+        $booking->apartmentName    = trim($body['apartmentName'] ?? $body['apartmentAddress'] ?? '');
         $booking->apartmentAddress = trim($body['apartmentAddress']);
-        $booking->unitNumber       = trim($body['unitNumber']);
+        $booking->unitNumber       = trim($body['unitNumber'] ?? '');
         $booking->buzzerCode       = isset($body['buzzerCode']) ? trim($body['buzzerCode']) : null;
         $booking->phone            = trim($body['phone']);
         $booking->email            = isset($body['email']) ? strtolower(trim($body['email'])) : null;
-        $booking->slotId           = trim($body['slotId']);
-        $booking->slotDay          = trim($body['slotDay']);
-        $booking->slotPeriod       = trim($body['slotPeriod']);
+        $booking->slotId           = trim($body['slotId'] ?? '');
+        $booking->slotDay          = trim($body['slotDay'] ?? '');
+        $booking->slotPeriod       = trim($body['slotPeriod'] ?? '');
         $booking->pickupTime       = trim($body['pickupTime']);
         $booking->deliveryTime     = trim($body['deliveryTime']);
         $booking->laundrySize      = trim($body['laundrySize']);

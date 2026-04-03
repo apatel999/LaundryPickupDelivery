@@ -9,15 +9,20 @@
     --amber: #EF9F27; --amber-light: #FAEEDA;
     --red: #E24B4A; --red-light: #FCEBEB;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--color-background-tertiary, #f5f4f0); min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--color-background-tertiary, #f5f4f0); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 2rem 1rem; }
   .phone-frame {
-    width: 375px; background: var(--color-background-primary, #fff);
-    border-radius: 40px; border: 0.5px solid var(--color-border-tertiary);
-    overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.08);
-    min-height: 700px; display: flex; flex-direction: column; position: relative;
+    width: 375px; max-width: 100%; background: var(--color-background-primary, #fff);
+    border-radius: 24px; border: 0.5px solid var(--color-border-tertiary);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    display: flex; flex-direction: column; position: relative; height: fit-content;
   }
-  .screen { display: none; flex-direction: column; flex: 1; }
+  .screen { display: none; flex-direction: column; }
   .screen.active { display: flex; }
+
+  @media (max-width: 420px) {
+    body { padding: 0; }
+    .phone-frame { width: 100%; border-radius: 0; border: none; box-shadow: none; min-height: 100vh; }
+  }
 
   /* Top bar */
   .topbar { padding: 20px 20px 8px; display: flex; align-items: center; justify-content: space-between; }
@@ -34,7 +39,7 @@
   .help-btn:hover { background: #B5D4F4; }
 
   /* Help modal overlay */
-  .help-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; border-radius: 40px; }
+  .help-overlay { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; align-items: center; justify-content: center; border-radius: 24px; }
   .help-overlay.show { display: flex; }
   .help-card { background: var(--color-background-primary, #fff); border-radius: 20px; padding: 28px 24px; width: 300px; text-align: center; }
   .help-card h3 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 8px; color: var(--color-text-primary); }
@@ -56,7 +61,7 @@
   .dot.inactive { background: var(--color-border-tertiary, #ddd); flex: 1; }
 
   /* Content area */
-  .content { padding: 8px 20px 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+  .content { padding: 8px 20px 24px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
 
   /* Form elements */
   .field-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
@@ -68,8 +73,11 @@
     outline: none; transition: border-color 0.15s;
   }
   .field-input:focus { border-color: var(--blue); }
+  .field-input.is-err { border-color: var(--red); background: var(--red-light); }
   .field-input::placeholder { color: var(--color-text-tertiary, #aaa); }
   .field-group { display: flex; flex-direction: column; }
+  .err-msg { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
+  .err-msg.show { display: block; }
 
   /* Laundry size cards */
   .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -96,6 +104,9 @@
   .radio-circle { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary, #ccc); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .radio-circle.checked { border-color: var(--blue); background: var(--blue); }
   .radio-circle.checked::after { content: ''; width: 7px; height: 7px; background: #fff; border-radius: 50%; }
+  .check-box { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--color-border-secondary, #ccc); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+  .check-box.checked { border-color: var(--blue); background: var(--blue); }
+  .check-box.checked::after { content: '✓'; color: #fff; font-size: 11px; font-weight: 700; line-height: 1; }
 
   /* CTA button */
   .cta-wrap { padding: 0 20px 28px; }
@@ -126,6 +137,9 @@
   .hero-strip { margin: 0 20px; background: var(--teal-light); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
   .hero-text h2 { font-family: 'Playfair Display', serif; font-size: 16px; color: var(--teal-dark); }
   .hero-text p { font-size: 12px; color: #0F6E56; margin-top: 2px; }
+  .hero-text ul { list-style: none; margin: 6px 0 0; padding: 0; }
+  .hero-text ul li { font-size: 12px; color: #0F6E56; padding-left: 14px; position: relative; line-height: 1.6; }
+  .hero-text ul li::before { content: '•'; position: absolute; left: 0; color: var(--teal); font-weight: 700; }
 
   .success-check { width: 56px; height: 56px; background: var(--teal-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
 </style>
@@ -135,7 +149,7 @@
   <!-- Help overlay (shared across screens) -->
   <div class="help-overlay" id="helpOverlay">
     <div class="help-card">
-      <div style="font-size:32px; margin-bottom:10px;">📞</div>
+      <!-- <div style="font-size:32px; margin-bottom:10px;">📞</div> -->
       <h3>Need help?</h3>
       <p>Our team is available 7 days a week, 7am – 10pm.</p>
       <div style="background: var(--color-background-secondary); border-radius: 12px; padding: 12px; margin-bottom: 16px;">
@@ -169,8 +183,9 @@
     
     <div class="content" style="margin-top:14px;">
       <div class="field-group">
-        <div class="field-label">Pickup address</div>
+        <div class="field-label">Pickup address <span style="color:var(--red)">*</span></div>
         <input class="field-input" id="addr" type="text" placeholder="123 Main St, Toronto ON" />
+        <div class="err-msg" id="e-addr">Please enter your pickup address.</div>
       </div>
       <div class="field-group">
         <div class="field-label">Unit / Apartment (optional)</div>
@@ -181,16 +196,16 @@
         <textarea class="field-input" id="instructions" rows="3" placeholder="Leave at door, ring bell, etc." style="resize:none;"></textarea>
       </div>
       <div class="field-group">
-        <div class="field-label">Phone number</div>
+        <div class="field-label">Phone number <span style="color:var(--red)">*</span></div>
         <input class="field-input" id="phone" type="tel" placeholder="+1 (416) 555-0100" />
+        <div class="err-msg" id="e-phone">Please enter a valid phone number.</div>
       </div>
       <div class="field-group">
         <div class="field-label">Email</div>
         <input class="field-input" id="email" type="email" placeholder="you@email.com" />
       </div>
       
-    </div>
-    <div class="hero-strip">
+      <div class="hero-strip" style="margin:0;">
         <!-- <div style="font-size:10px;">🧺</div> -->
         <div class="hero-text">
           <h2>Fresh laundry, delivery details</h2>
@@ -200,9 +215,10 @@
             <li>Delivery by 8 PM tomorrow</li>
           </ul>
         </div>
+      </div>
     </div>
     <div class="cta-wrap">
-      <button class="cta-btn" onclick="goTo(2)">
+      <button class="cta-btn" onclick="submitScreen1()">
         Continue
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
       </button>
@@ -228,19 +244,19 @@
         <div class="section-head" style="margin-bottom:10px;">Select laundry size</div>
         <div class="size-grid" id="sizeGrid">
           <div class="size-card selected" data-size="small" data-price="19.99" onclick="selectSize(this)">
-            <div class="size-icon">👕</div>
+            <div class="size-icon">🧺</div>
             <div class="size-name">Small bag</div>
             <div class="size-desc">Up to 10 lbs</div>
             <div class="size-price">$19.99</div>
           </div>
           <div class="size-card" data-size="medium" data-price="29.99" onclick="selectSize(this)">
-            <div class="size-icon">🧳</div>
+            <div class="size-icon">🧺🧺</div>
             <div class="size-name">Medium bag</div>
             <div class="size-desc">Up to 20 lbs</div>
             <div class="size-price">$29.99</div>
           </div>
           <div class="size-card" data-size="large" data-price="39.99" onclick="selectSize(this)">
-            <div class="size-icon">🛍</div>
+            <div class="size-icon">🧺🧺🧺</div>
             <div class="size-name">Large bag</div>
             <div class="size-desc">Up to 30 lbs</div>
             <div class="size-price">$39.99</div>
@@ -260,22 +276,18 @@
       </div>
 
       <div>
-        <div class="section-head" style="margin-bottom:8px;">Detergent</div>
-        <div style="display:flex; flex-direction:column; gap:8px;" id="detGroup">
-          <div class="option-row selected" data-det="standard" onclick="selectDet(this)">
-            <div class="radio-circle checked" id="det0"></div>
-            <div><div class="opt-label">Standard (free)</div><div class="opt-sub">Tide Original — included</div></div>
+        <div class="section-head" style="margin-bottom:8px;">Add-ons</div>
+        <div style="display:flex; flex-direction:column; gap:8px;" id="addonGroup">
+          <div class="option-row" data-addon="detergent" data-price="1" onclick="toggleAddon(this)">
+            <div class="check-box" id="ad0"></div>
+            <div><div class="opt-label">Detergent — $1</div><div class="opt-sub">Standard laundry detergent</div></div>
           </div>
-          <div class="option-row" data-det="sensitive" onclick="selectDet(this)">
-            <div class="radio-circle" id="det1"></div>
-            <div><div class="opt-label">Sensitive skin +$2</div><div class="opt-sub">Fragrance & dye free</div></div>
+          <div class="option-row" data-addon="softener" data-price="1" onclick="toggleAddon(this)">
+            <div class="check-box" id="ad1"></div>
+            <div><div class="opt-label">Fabric softener — $1</div><div class="opt-sub">Keeps clothes soft &amp; fresh</div></div>
           </div>
-          <div class="option-row" data-det="eco" onclick="selectDet(this)">
-            <div class="radio-circle" id="det2"></div>
-            <div><div class="opt-label">Eco / natural +$3</div><div class="opt-sub">Plant-based, biodegradable</div></div>
-          </div>
-          <div class="option-row" data-det="own" onclick="selectDet(this)">
-            <div class="radio-circle" id="det3"></div>
+          <div class="option-row" data-addon="own" data-price="0" onclick="toggleAddon(this)">
+            <div class="check-box" id="ad2"></div>
             <div><div class="opt-label">I'll provide my own</div><div class="opt-sub">Include in your bag</div></div>
           </div>
         </div>
@@ -287,7 +299,7 @@
       </div>
     </div>
     <div class="cta-wrap">
-      <button class="cta-btn teal" onclick="goTo(3)">
+      <button class="cta-btn" onclick="goTo(3)">
         Review order
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
       </button>
@@ -346,8 +358,8 @@
             <span class="review-val" id="rv-size">—</span>
           </div>
           <div class="review-row">
-            <span class="review-label">Detergent</span>
-            <span class="review-val" id="rv-det">—</span>
+            <span class="review-label">Add-ons</span>
+            <span class="review-val" id="rv-addons">—</span>
           </div>
           <div class="review-row">
             <span class="review-label">Special notes</span>
@@ -364,8 +376,8 @@
             <span class="review-val" id="rv-base">—</span>
           </div>
           <div class="review-row">
-            <span class="review-label">Detergent upgrade</span>
-            <span class="review-val" id="rv-det-fee">$0.00</span>
+            <span class="review-label">Add-ons</span>
+            <span class="review-val" id="rv-addon-fee">$0.00</span>
           </div>
           <div class="review-row">
             <span class="review-label">Pickup & delivery</span>
@@ -379,7 +391,7 @@
       </div>
     </div>
     <div class="cta-wrap">
-      <button class="cta-btn" style="background:var(--teal);" onclick="placeOrder()">
+      <button class="cta-btn" onclick="placeOrder()">
         Confirm order
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
       </button>
@@ -414,12 +426,154 @@
 
 <script>
 let selectedSize = {name:'Small bag',price:19.99,label:'Small bag (up to 10 lbs)'};
-let selectedDet = {name:'Standard (free)',fee:0};
+let selectedAddons = [];
+let payload = {};
 
+// Save screen 1 fields to localStorage
+var screen1Fields = ['addr','unit','instructions','phone','email'];
+function saveScreen1() {
+  try {
+    var data = {};
+    screen1Fields.forEach(function(id) { data[id] = document.getElementById(id).value; });
+    localStorage.setItem('ll_screen1', JSON.stringify(data));
+  } catch(e) { console.warn('localStorage save failed', e); }
+}
+// screen1Fields.forEach(function(id) {
+//   var el = document.getElementById(id);
+//   if (el) {
+//     el.addEventListener('input', saveScreen1);
+//     el.addEventListener('change', saveScreen1);
+//   }
+// });
+
+// Load saved fields from localStorage
+(function() {
+  try {
+    var raw = localStorage.getItem('ll_screen1');
+    if (!raw) return;
+    var data = JSON.parse(raw);
+    Object.keys(data).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && data[id]) el.value = data[id];
+    });
+  } catch(e) { console.warn('localStorage load failed', e); }
+})();
+
+// Phone number formatting: +1 (XXX) XXX-XXXX
+document.getElementById('phone').addEventListener('input', function(e) {
+  var digits = this.value.replace(/\D/g, '');
+  // If user typed leading 1, treat as country code
+  if (digits.length > 0 && digits[0] === '1') {
+    digits = digits.substring(0, 11);
+  } else {
+    digits = digits.substring(0, 10);
+  }
+  var formatted = '';
+  if (digits.length === 0) {
+    formatted = '';
+  } else if (digits[0] === '1') {
+    formatted = '+1';
+    var local = digits.substring(1);
+    if (local.length > 0) formatted += ' (' + local.substring(0, 3);
+    if (local.length >= 3) formatted += ') ';
+    if (local.length > 3) formatted += local.substring(3, 6);
+    if (local.length > 6) formatted += '-' + local.substring(6, 10);
+  } else {
+    formatted = '(';
+    formatted += digits.substring(0, 3);
+    if (digits.length >= 3) formatted += ') ';
+    if (digits.length > 3) formatted += digits.substring(3, 6);
+    if (digits.length > 6) formatted += '-' + digits.substring(6, 10);
+  }
+  this.value = formatted;
+});
+
+function submitScreen1() {
+  var ok = true;
+  var addrEl = document.getElementById('addr');
+  var phoneEl = document.getElementById('phone');
+  var addr = addrEl.value.trim();
+  var phoneDigits = phoneEl.value.replace(/\D/g, '');
+
+  // Address: required
+  if (!addr) {
+    addrEl.classList.add('is-err');
+    document.getElementById('e-addr').classList.add('show');
+    ok = false;
+  } else {
+    addrEl.classList.remove('is-err');
+    document.getElementById('e-addr').classList.remove('show');
+  }
+
+  // Phone: require at least 10 digits
+  if (phoneDigits.length < 10) {
+    phoneEl.classList.add('is-err');
+    document.getElementById('e-phone').classList.add('show');
+    ok = false;
+  } else {
+    phoneEl.classList.remove('is-err');
+    document.getElementById('e-phone').classList.remove('show');
+  }
+
+  if (!ok) return;
+
+  // Pickup: same day 8 PM if ordered before 7 PM, otherwise next day 8 PM
+  // Delivery: always 8 PM the day after pickup
+  var now = new Date();
+  var pickupDate = new Date(now);
+  if (now.getHours() >= 19) {
+    pickupDate.setDate(pickupDate.getDate() + 1);
+  }
+  pickupDate.setHours(20, 0, 0, 0);
+
+  var deliveryDate = new Date(pickupDate);
+  deliveryDate.setDate(deliveryDate.getDate() + 1);
+
+  payload = {
+    apartmentAddress:     addrEl.value.trim(),
+    unitNumber:           document.getElementById('unit').value.trim() || null,
+    deliveryInstructions: document.getElementById('instructions').value.trim() || null,
+    phone:                phoneEl.value.trim(),
+    email:                document.getElementById('email').value.trim() || null,
+    pickupTime:           pickupDate.toISOString(),
+    deliveryTime:         deliveryDate.toISOString(),
+  };
+
+  saveScreen1();
+  goTo(2);
+}
+
+// Clear errors on input
+['addr','phone'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() {
+    this.classList.remove('is-err');
+    var errEl = document.getElementById('e-' + id);
+    if (errEl) errEl.classList.remove('show');
+  });
+});
 function goTo(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen'+n).classList.add('active');
-  if(n===3) populateReview();
+  if(n===3) {
+    // Build cartItems
+    var cartItems = [
+      { itemType: 'laundry', itemName: selectedSize.name, description: selectedSize.label, price: selectedSize.price }
+    ];
+    selectedAddons.forEach(function(a) {
+      cartItems.push({ itemType: 'addon', itemName: a.name, description: a.name, price: a.price });
+    });
+
+    payload.apartmentName    = payload.apartmentAddress;
+    payload.unitNumber       = payload.unitNumber || '';
+    payload.laundrySize      = selectedSize.label;
+    payload.cartItems        = cartItems;
+    payload.totalCost        = selectedSize.price + selectedAddons.reduce(function(s,a){ return s+a.price; },0);
+    payload.notes            = document.getElementById('addInstr').value.trim() || null;
+    payload.slotId           = 'direct';
+    payload.slotDay          = '';
+    payload.slotPeriod       = '';
+    populateReview();
+  }
 }
 
 function selectSize(el) {
@@ -432,7 +586,7 @@ function selectSize(el) {
   document.getElementById('customWrap').style.display = size==='custom' ? 'flex' : 'none';
   document.getElementById('customWrap').style.flexDirection = 'column';
   document.getElementById('customWrap').style.gap = '6px';
-  selectedSize = {name, price: size==='custom'?0:price, label: name+' ('+desc+')', size};
+  selectedSize = {name, price: size==='custom'?0:price, label: name+' ('+desc+')', size, lbs: size==='custom'?0:({small:10,medium:20,large:30}[size]||0)};
 }
 
 function updateCustomPrice() {
@@ -441,17 +595,35 @@ function updateCustomPrice() {
   selectedSize.label = 'Custom ('+lbs+' lbs)';
 }
 
-function selectDet(el) {
-  document.querySelectorAll('#detGroup .option-row').forEach((r,i)=>{
-    r.classList.remove('selected');
-    document.getElementById('det'+i).classList.remove('checked');
+function toggleAddon(el) {
+  const idx = [...document.querySelectorAll('#addonGroup .option-row')].indexOf(el);
+  const isOwn = el.dataset.addon === 'own';
+  const wasSelected = el.classList.contains('selected');
+
+  if (isOwn && !wasSelected) {
+    // "I'll provide my own" deselects detergent & softener
+    document.querySelectorAll('#addonGroup .option-row').forEach((r, i) => {
+      if (r.dataset.addon !== 'own') {
+        r.classList.remove('selected');
+        document.getElementById('ad'+i).classList.remove('checked');
+      }
+    });
+  } else if (!isOwn && !wasSelected) {
+    // Selecting detergent/softener deselects "own"
+    var ownRow = document.querySelector('#addonGroup .option-row[data-addon="own"]');
+    var ownIdx = [...document.querySelectorAll('#addonGroup .option-row')].indexOf(ownRow);
+    ownRow.classList.remove('selected');
+    document.getElementById('ad'+ownIdx).classList.remove('checked');
+  }
+
+  el.classList.toggle('selected');
+  document.getElementById('ad'+idx).classList.toggle('checked');
+
+  // Rebuild selectedAddons
+  selectedAddons = [];
+  document.querySelectorAll('#addonGroup .option-row.selected').forEach(function(r) {
+    selectedAddons.push({ name: r.dataset.addon, price: parseFloat(r.dataset.price) });
   });
-  const idx = [...document.querySelectorAll('#detGroup .option-row')].indexOf(el);
-  el.classList.add('selected');
-  document.getElementById('det'+idx).classList.add('checked');
-  const fees = [0,2,3,0];
-  const names = ['Standard (Tide)','Sensitive skin','Eco / natural','Provided by me'];
-  selectedDet = {name:names[idx], fee:fees[idx]};
 }
 
 function populateReview() {
@@ -462,27 +634,46 @@ function populateReview() {
   document.getElementById('rv-phone').textContent = get('phone');
   document.getElementById('rv-email').textContent = get('email');
   document.getElementById('rv-size').textContent = selectedSize.label;
-  document.getElementById('rv-det').textContent = selectedDet.name;
+  var addonNames = selectedAddons.map(function(a){ return a.name.charAt(0).toUpperCase()+a.name.slice(1); }).join(', ') || 'None';
+  document.getElementById('rv-addons').textContent = addonNames;
   document.getElementById('rv-notes').textContent = document.getElementById('addInstr').value.trim()||'None';
   const base = selectedSize.price;
-  const detFee = selectedDet.fee;
-  const total = base + detFee;
+  const addonFee = selectedAddons.reduce(function(sum,a){ return sum+a.price; },0);
+  const total = base + addonFee;
   document.getElementById('rv-base').textContent = '$'+base.toFixed(2);
-  document.getElementById('rv-det-fee').textContent = detFee>0 ? '+$'+detFee.toFixed(2) : '$0.00';
+  document.getElementById('rv-addon-fee').textContent = addonFee>0 ? '+$'+addonFee.toFixed(2) : '$0.00';
   document.getElementById('rv-total').textContent = '$'+total.toFixed(2);
 }
 
-function placeOrder() { goTo(4); }
+async function placeOrder() {
+  var btn = document.querySelector('#screen3 .cta-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    var res = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return {}; });
+      throw new Error(err.error || ('Server error ' + res.status));
+    }
+
+    var data = await res.json();
+    console.log('Booking saved:', data);
+    goTo(4);
+  } catch (err) {
+    console.error('Booking failed:', err);
+    alert('Something went wrong: ' + err.message + '\nPlease try again.');
+    btn.disabled = false;
+    btn.innerHTML = 'Confirm order <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+  }
+}
 
 function resetForm() {
-  ['addr','unit','instructions','phone','email','addInstr','customLbs'].forEach(id=>{
-    document.getElementById(id).value='';
-  });
-  selectedSize = {name:'Small bag',price:19.99,label:'Small bag (up to 10 lbs)'};
-  selectedDet = {name:'Standard (free)',fee:0};
-  document.querySelectorAll('#sizeGrid .size-card').forEach((c,i)=>{
-    c.classList.toggle('selected',i===0);
-  });
-  selectDet(document.querySelector('#detGroup .option-row'));
+  window.location.reload();
 }
 </script>
