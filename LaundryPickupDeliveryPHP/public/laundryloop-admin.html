@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LaundryLoop — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand:        #3d2db5;
+  --brand-dark:   #2c1f8f;
+  --brand-mid:    #5b4dd4;
+  --brand-light:  #edeafd;
+  --accent:       #f97316;
+  --accent-light: #fff4ed;
+  --text:         #1a1830;
+  --muted:        #6b6882;
+  --border:       rgba(61,45,181,0.12);
+  --surface:      #ffffff;
+  --page:         #f4f3fb;
+
+  --status-pending:   #fff4ed;
+  --status-pending-t: #9a3412;
+  --status-confirmed: #eff6ff;
+  --status-confirmed-t: #1d4ed8;
+  --status-pickedup:  #f0fdf4;
+  --status-pickedup-t:#166534;
+  --status-delivered: #edeafd;
+  --status-delivered-t:#3d2db5;
+  --status-cancelled: #fef2f2;
+  --status-cancelled-t:#991b1b;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--page); color: var(--text); min-height: 100vh; font-size: 14px; }
+
+/* ── HEADER ── */
+.header {
+  background: var(--brand);
+  padding: 14px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+}
+.logo { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: #fff; letter-spacing: -0.3px; }
+.logo em { color: var(--accent); font-style: normal; }
+.header-badge { font-size: 11px; background: rgba(255,255,255,0.15); color: #fff; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+
+/* ── LAYOUT ── */
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+/* ── STAT CARDS ── */
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); padding: 16px 18px; }
+.stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+.stat-num { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-card.s-pending   .stat-num { color: var(--status-pending-t); }
+.stat-card.s-confirmed .stat-num { color: var(--status-confirmed-t); }
+.stat-card.s-pickedup  .stat-num { color: var(--status-pickedup-t); }
+.stat-card.s-delivered .stat-num { color: var(--status-delivered-t); }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border);
+  padding: 14px 18px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.toolbar-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 300; margin-right: 8px; white-space: nowrap; }
+
+.filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
+
+.filter-btn {
+  padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border);
+  background: var(--page); font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--muted);
+  transition: all 0.15s; white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--brand-mid); color: var(--brand); }
+.filter-btn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+.sort-select {
+  padding: 7px 30px 7px 12px; border-radius: 8px; border: 0.5px solid var(--border);
+  background: var(--page); font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6882' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  outline: none;
+}
+.sort-select:focus { border-color: var(--brand-mid); }
+
+.refresh-btn {
+  margin-left: auto; padding: 7px 16px; border-radius: 8px;
+  background: var(--brand); color: #fff; border: none;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; transition: background 0.15s;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+}
+.refresh-btn:hover { background: var(--brand-dark); }
+
+/* ── TABLE ── */
+.table-wrap { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); overflow: hidden; }
+.table-scroll { overflow-x: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: var(--page); }
+th {
+  padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted);
+  white-space: nowrap; cursor: pointer; user-select: none;
+  border-bottom: 0.5px solid var(--border);
+}
+th:hover { color: var(--brand); }
+th .sort-arrow { margin-left: 4px; opacity: 0.4; font-size: 10px; }
+th.sorted .sort-arrow { opacity: 1; color: var(--brand); }
+
+td { padding: 13px 14px; border-bottom: 0.5px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafafa; }
+
+.ref { font-weight: 600; font-size: 12px; color: var(--brand); white-space: nowrap; }
+.apt-name { font-weight: 500; color: var(--text); }
+.apt-addr { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.unit     { font-size: 12px; color: var(--muted); }
+.buzzer   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.phone    { white-space: nowrap; }
+.slot-day { font-weight: 500; white-space: nowrap; }
+.slot-time{ font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.delivery { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
+.laundry-size { font-size: 12px; color: var(--text); }
+.addons   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.notes-cell { font-size: 12px; color: var(--muted); max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── STATUS BADGE ── */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge-Pending   { background: var(--status-pending);   color: var(--status-pending-t); }
+.badge-Confirmed { background: var(--status-confirmed); color: var(--status-confirmed-t); }
+.badge-PickedUp  { background: var(--status-pickedup);  color: var(--status-pickedup-t); }
+.badge-Delivered { background: var(--status-delivered); color: var(--status-delivered-t); }
+.badge-Cancelled { background: var(--status-cancelled); color: var(--status-cancelled-t); }
+
+/* ── DETAILS BUTTON ── */
+.btn-details {
+  padding: 4px 8px; border: 1px solid var(--border); background: var(--surface);
+  border-radius: 4px; font-size: 11px; cursor: pointer; color: var(--text);
+}
+.btn-details:hover { background: var(--page); }
+
+/* ── STATUS DROPDOWN in table ── */
+.status-select {
+  padding: 4px 24px 4px 8px; border-radius: 6px; border: 0.5px solid var(--border);
+  font-size: 11px; font-weight: 600; cursor: pointer; outline: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%236b6882' stroke-width='1.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 7px center;
+  transition: all 0.15s;
+}
+.status-select.s-Pending   { background-color: var(--status-pending);   color: var(--status-pending-t); }
+.status-select.s-Confirmed { background-color: var(--status-confirmed); color: var(--status-confirmed-t); }
+.status-select.s-PickedUp  { background-color: var(--status-pickedup);  color: var(--status-pickedup-t); }
+.status-select.s-Delivered { background-color: var(--status-delivered); color: var(--status-delivered-t); }
+.status-select.s-Cancelled { background-color: var(--status-cancelled); color: var(--status-cancelled-t); }
+
+/* ── ROUTE ORDER BADGE ── */
+.route-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--brand); color: #fff;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+
+/* ── EMPTY / LOADING ── */
+.empty-row td { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+.loading-row td { text-align: center; padding: 48px 20px; }
+.spinner {
+  width: 28px; height: 28px; border: 3px solid var(--brand-light);
+  border-top-color: var(--brand); border-radius: 50%;
+  animation: spin 0.7s linear infinite; margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── MODAL ── */
+.modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;
+}
+.modal-content {
+  background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border);
+  max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.modal-header {
+  padding: 18px 20px; border-bottom: 0.5px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { margin: 0; font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--text); }
+.modal-header button {
+  background: none; border: none; font-size: 24px; cursor: pointer; color: var(--muted);
+  padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+}
+.modal-header button:hover { color: var(--text); }
+.modal-body { padding: 20px; }
+.detail-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--border); }
+.detail-item:last-child { border-bottom: none; font-weight: 600; color: var(--brand); }
+.detail-total { font-size: 16px; }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-top: 0.5px solid var(--border); font-size: 13px; color: var(--muted); }
+.page-btns { display: flex; gap: 6px; }
+.page-btn {
+  padding: 6px 12px; border-radius: 7px; border: 0.5px solid var(--border);
+  background: var(--surface); cursor: pointer; font-size: 12px; font-weight: 500;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); transition: all 0.15s;
+}
+.page-btn:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand-mid); color: var(--brand); }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+@media (max-width: 768px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .wrap  { padding: 16px 12px 48px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">laundry<em>loop</em></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="header-badge">Admin Dashboard</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- STATS -->
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-num" id="st-total">—</div></div>
+    <div class="stat-card s-pending">  <div class="stat-label">Pending</div>  <div class="stat-num" id="st-pending">—</div></div>
+    <div class="stat-card s-confirmed"><div class="stat-label">Confirmed</div><div class="stat-num" id="st-confirmed">—</div></div>
+    <div class="stat-card s-pickedup"> <div class="stat-label">Picked Up</div><div class="stat-num" id="st-pickedup">—</div></div>
+    <div class="stat-card s-delivered"><div class="stat-label">Delivered</div><div class="stat-num" id="st-delivered">—</div></div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-title">Bookings</div>
+
+    <div class="filter-group">
+      <button class="filter-btn active" onclick="setFilter(null, this)">All</button>
+      <button class="filter-btn" onclick="setFilter('Pending', this)">Pending</button>
+      <button class="filter-btn" onclick="setFilter('Confirmed', this)">Confirmed</button>
+      <button class="filter-btn" onclick="setFilter('PickedUp', this)">Picked Up</button>
+      <button class="filter-btn" onclick="setFilter('Delivered', this)">Delivered</button>
+      <button class="filter-btn" onclick="setFilter('Cancelled', this)">Cancelled</button>
+    </div>
+
+    <select class="sort-select" id="sort-select" onchange="setSort(this.value)">
+      <option value="createdAt|desc">Newest first</option>
+      <option value="apartmentAddress|asc">📍 Address A→Z</option>
+      <option value="apartmentName|asc">🏢 Building A→Z</option>
+      <option value="slotDay|asc">📅 Pickup day</option>
+      <option value="pickupTime|asc">⏰ Pickup time</option>
+      <option value="status|asc">Status</option>
+    </select>
+
+    <button class="refresh-btn" onclick="loadBookings()">↻ Refresh</button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px">#</th>
+            <th onclick="toggleSort('reference')">Ref <span class="sort-arrow" id="arrow-reference">↕</span></th>
+            <th onclick="toggleSort('apartmentAddress')">Address <span class="sort-arrow" id="arrow-apartmentAddress">↕</span></th>
+            <th onclick="toggleSort('apartmentName')">Building <span class="sort-arrow" id="arrow-apartmentName">↕</span></th>
+            <th>Contact</th>
+            <th onclick="toggleSort('slotDay')">Pickup <span class="sort-arrow" id="arrow-slotDay">↕</span></th>
+            <th>Delivery</th>
+            <th>Laundry Size</th>
+            <th>Total</th>
+            <th>Notes</th>
+            <th onclick="toggleSort('status')">Status <span class="sort-arrow" id="arrow-status">↕</span></th>
+            <th>Details</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr class="loading-row"><td colspan="10"><div class="spinner"></div><div>Loading bookings…</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="page-info">—</span>
+      <div class="page-btns">
+        <button class="page-btn" id="btn-prev" onclick="changePage(-1)" disabled>← Prev</button>
+        <button class="page-btn" id="btn-next" onclick="changePage(1)"  disabled>Next →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL -->
+<div id="details-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Booking #<span id="modal-booking-id"></span> - Cost Breakdown</h3>
+      <button onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+  </div>
+</div>
+
+<script>
+async function showDetails(bookingId) {
+  try {
+    // Fetch booking details and cart items in parallel
+    const [bookingRes, itemsRes] = await Promise.all([
+      fetch(`/api/bookings/${bookingId}`),
+      fetch(`/api/bookings/${bookingId}/cart-items`)
+    ]);
+    
+    if (!bookingRes.ok) throw new Error('Failed to load booking details');
+    if (!itemsRes.ok) throw new Error('Failed to load cost breakdown');
+    
+    const booking = await bookingRes.json();
+    const items = await itemsRes.json();
+    
+    document.getElementById('modal-booking-id').textContent = booking.reference;
+    const body = document.getElementById('modal-body');
+    
+    // Booking details section
+    body.innerHTML = `
+      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Booking Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+          <div><strong>Address:</strong> ${esc(booking.apartmentAddress)}, Unit ${esc(booking.unitNumber)}</div>
+          <div><strong>Building:</strong> ${esc(booking.apartmentName)}</div>
+          <div><strong>Phone:</strong> ${esc(booking.phone)}</div>
+          <div><strong>Email:</strong> ${booking.email ? esc(booking.email) : '—'}</div>
+          <div><strong>Pickup:</strong> ${esc(booking.slotDay)} — ${esc(booking.slotPeriod)} at ${esc(booking.pickupTime)}</div>
+          <div><strong>Delivery:</strong> ${esc(booking.deliveryTime)}</div>
+          <div><strong>Laundry Size:</strong> ${esc(booking.laundrySize)}</div>
+          <div><strong>Status:</strong> <span class="badge badge-${booking.status}">${booking.status}</span></div>
+        </div>
+        ${booking.notes ? `<div style="margin-top: 8px;"><strong>Notes:</strong> ${esc(booking.notes)}</div>` : ''}
+        ${booking.buzzerCode ? `<div style="margin-top: 4px;"><strong>Buzzer:</strong> ${esc(booking.buzzerCode)}</div>` : ''}
+      </div>
+      
+      <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Cost Breakdown</h4>
+    `;
+    
+    // Cost breakdown
+    body.innerHTML += items.map(item => 
+      `<div class="detail-item">
+        <span>${esc(item.itemName)}</span>
+        <span>$${item.price.toFixed(2)}</span>
+      </div>`
+    ).join('');
+    
+    const total = items.reduce((sum, item) => sum + item.price, 0);
+    body.innerHTML += `<div class="detail-item detail-total">
+      <span>Total</span>
+      <span>$${total.toFixed(2)}</span>
+    </div>`;
+    
+    document.getElementById('details-modal').style.display = 'flex';
+  } catch (err) {
+    alert('Error loading details: ' + err.message);
+  }
+}
+
+function closeModal() {
+  document.getElementById('details-modal').style.display = 'none';
+}
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+(async () => {
+  const config = await fetch('/api/config').then(r => r.json());
+  const API_BASE = config.baseUrl;
+  const PAGE_SIZE = 50;
+
+  let currentPage   = 1;
+  let currentFilter = null;
+  let currentSort   = 'createdAt';
+  let currentDir    = 'desc';
+  let totalCount    = 0;
+
+/* ── Load bookings from API ── */
+async function loadBookings() {
+  showLoading();
+
+  const params = new URLSearchParams({
+    page:     currentPage,
+    pageSize: PAGE_SIZE,
+    sortBy:   currentSort,
+    sortDir:  currentDir,
+  });
+  if (currentFilter) params.set('status', currentFilter);
+
+  try {
+    const res  = await fetch(`${API_BASE}/api/bookings?${params}`);
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    const data = await res.json();
+
+    totalCount = data.total;
+    renderTable(data.items);
+    renderPagination(data.total);
+    await loadStats();
+
+  } catch (err) {
+    showError('Failed to load bookings: ' + err.message);
+    document.getElementById('table-body').innerHTML =
+      `<tr class="empty-row"><td colspan="10">⚠️ Could not connect to API.<br><small>${err.message}</small></td></tr>`;
+  }
+}
+
+/* ── Load stats (all statuses) ── */
+async function loadStats() {
+  try {
+    // Fetch all without filter just to get total counts per status
+    const res  = await fetch(`${API_BASE}/api/bookings?pageSize=1000`);
+    const data = await res.json();
+    const all  = data.items;
+
+    const count = (s) => all.filter(b => b.status === s).length;
+    document.getElementById('st-total').textContent     = data.total;
+    document.getElementById('st-pending').textContent   = count('Pending');
+    document.getElementById('st-confirmed').textContent = count('Confirmed');
+    document.getElementById('st-pickedup').textContent  = count('PickedUp');
+    document.getElementById('st-delivered').textContent = count('Delivered');
+  } catch { /* stats are non-critical */ }
+}
+
+/* ── Render table rows ── */
+function renderTable(items) {
+  const tbody = document.getElementById('table-body');
+
+  if (!items || items.length === 0) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No bookings found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map((b, i) => {
+    const routeNum = (currentPage - 1) * PAGE_SIZE + i + 1;
+    const buzzer   = b.buzzerCode ? `<div class="buzzer">🔔 ${b.buzzerCode}</div>` : '';
+    const notes    = b.notes      ? `<div class="notes-cell" title="${esc(b.notes)}">${esc(b.notes)}</div>` : '<span style="color:#ccc">—</span>';
+
+    return `<tr id="row-${b.id}">
+      <td><span class="route-num">${routeNum}</span></td>
+      <td><span class="ref">${b.reference}</span></td>
+      <td>
+        <div class="apt-addr">${esc(b.apartmentAddress)}</div>
+        <div class="unit">Unit ${esc(b.unitNumber)}</div>
+        ${buzzer}
+      </td>
+      <td><div class="apt-name">${esc(b.apartmentName)}</div></td>
+      <td>
+        <div class="phone">📞 ${esc(b.phone)}</div>
+        ${b.email ? `<div class="apt-addr">✉️ ${esc(b.email)}</div>` : ''}
+      </td>
+      <td>
+        <div class="slot-day">${esc(b.slotDay)} — ${esc(b.slotPeriod)}</div>
+        <div class="slot-time">📦 ${esc(b.pickupTime)}</div>
+      </td>
+      <td>
+        <div class="delivery">✅ ${esc(b.deliveryTime)}</div>
+      </td>
+      <td>
+        <div class="laundry-size">${esc(b.laundrySize)}</div>
+      </td>
+      <td>$${esc(b.totalCost)}</td>
+      <td>${notes}</td>
+      <td>
+        <select class="status-select s-${b.status}"
+                onchange="updateStatus(${b.id}, this)"
+                data-id="${b.id}">
+          ${statusOptions(b.status)}
+        </select>
+      </td>
+      <td><button class="btn-details" onclick="showDetails(${b.id})">View</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function statusOptions(current) {
+  return ['Pending','Confirmed','PickedUp','Delivered','Cancelled']
+    .map(s => `<option value="${s}" ${s === current ? 'selected' : ''}>${s}</option>`)
+    .join('');
+}
+
+/* ── Update booking status ── */
+async function updateStatus(id, selectEl) {
+  const newStatus = selectEl.value;
+  selectEl.className = `status-select s-${newStatus}`;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/bookings/${id}/status`, {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ status: newStatus }),
+    });
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
+    showToast(`✓ Status updated to ${newStatus}`, 'success');
+    await loadStats();
+
+  } catch (err) {
+    showToast('Failed to update status', 'error');
+  }
+}
+
+/* ── Filter ── */
+function setFilter(status, btn) {
+  currentFilter = status;
+  currentPage   = 1;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadBookings();
+}
+
+/* ── Sort from dropdown ── */
+function setSort(val) {
+  const [col, dir] = val.split('|');
+  currentSort = col;
+  currentDir  = dir;
+  currentPage = 1;
+  updateSortArrows();
+  loadBookings();
+}
+
+/* ── Sort from column header click ── */
+function toggleSort(col) {
+  if (currentSort === col) {
+    currentDir = currentDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    currentSort = col;
+    currentDir  = 'asc';
+  }
+  currentPage = 1;
+
+  // Sync the dropdown
+  const key = `${col}|${currentDir}`;
+  const sel = document.getElementById('sort-select');
+  if ([...sel.options].some(o => o.value === key)) sel.value = key;
+
+  updateSortArrows();
+  loadBookings();
+}
+
+function updateSortArrows() {
+  document.querySelectorAll('.sort-arrow').forEach(el => {
+    const col = el.id.replace('arrow-', '');
+    if (col === currentSort) {
+      el.textContent = currentDir === 'asc' ? '↑' : '↓';
+      el.closest('th').classList.add('sorted');
+    } else {
+      el.textContent = '↕';
+      el.closest('th').classList.remove('sorted');
+    }
+  });
+}
+
+/* ── Pagination ── */
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const start = (currentPage - 1) * PAGE_SIZE + 1;
+  const end   = Math.min(currentPage * PAGE_SIZE, total);
+  document.getElementById('page-info').textContent =
+    total === 0 ? 'No results' : `Showing ${start}–${end} of ${total}`;
+  document.getElementById('btn-prev').disabled = currentPage <= 1;
+  document.getElementById('btn-next').disabled = currentPage >= totalPages;
+}
+
+function changePage(delta) {
+  currentPage += delta;
+  loadBookings();
+}
+
+/* ── Helpers ── */
+function showLoading() {
+  document.getElementById('table-body').innerHTML =
+    `<tr class="loading-row"><td colspan="10"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', 3000);
+}
+
+function showError(msg) { showToast(msg, 'error'); }
+
+  /* ── Init ── */
+  loadBookings();
+
+})();
+</script>
+</body>
+</html>

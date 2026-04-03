@@ -1,0 +1,12 @@
+
+#delete volum and data
+docker compose down -v
+
+#run docker compose
+docker compose up -d
+
+#Open SQL in interactive mode
+docker exec -it laundryloop-mysql mysql -u root -psecret LaundryLoopDb
+
+#run application
+php -S localhost:8080 -t public

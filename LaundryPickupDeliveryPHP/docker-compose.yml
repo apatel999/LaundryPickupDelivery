@@ -1,0 +1,37 @@
+services:
+
+  db:
+    image: mysql:8.0
+    container_name: laundryloop-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: LaundryLoopDb
+    ports:
+      - "3306:3306"
+    volumes:
+      - laundryloop-db:/var/lib/mysql          # persistent data
+      - ./database/setup-database.sql:/docker-entrypoint-initdb.d/setup.sql  # auto-runs on first start
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # php:
+  #   image: php:8.2-cli
+  #   container_name: laundryloop-php
+  #   restart: unless-stopped
+  #   working_dir: /app
+  #   volumes:
+  #     - .:/app
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   command: >
+  #     sh -c "php -S 0.0.0.0:8080 -t public"
+
+volumes:
+  laundryloop-db:
