@@ -304,14 +304,14 @@ tr:hover td { background: #fafafa; }
   <div class="toolbar">
     <div class="toolbar-title">Bookings</div>
 
-    <div class="filter-group">
-      <button class="filter-btn active" onclick="setFilter(null, this)">All</button>
-      <button class="filter-btn" onclick="setFilter('Pending', this)">Pending</button>
-      <button class="filter-btn" onclick="setFilter('Confirmed', this)">Confirmed</button>
-      <button class="filter-btn" onclick="setFilter('PickedUp', this)">Picked Up</button>
-      <button class="filter-btn" onclick="setFilter('Delivered', this)">Delivered</button>
-      <button class="filter-btn" onclick="setFilter('Cancelled', this)">Cancelled</button>
-    </div>
+    <select class="sort-select" id="status-filter" onchange="setFilter(this.value || null)">
+      <option value="">All Statuses</option>
+      <option value="Pending">Pending</option>
+      <option value="Confirmed">Confirmed</option>
+      <option value="PickedUp">Picked Up</option>
+      <option value="Delivered">Delivered</option>
+      <option value="Cancelled">Cancelled</option>
+    </select>
 
     <input type="text" class="search-input" id="search-input" placeholder="🔍 Phone or address…" onkeydown="if(event.key==='Enter') doSearch()" />
     <input type="date" class="date-input" id="date-input" onchange="doSearch()" />
@@ -557,25 +557,16 @@ function clearSearch() {
 }
 
 /* ── Filter ── */
-function setFilter(status, btn) {
+function setFilter(status) {
   currentFilter = status;
   currentPage   = 1;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+  document.getElementById('status-filter').value = status || '';
   syncStatHighlight();
   loadBookings();
 }
 
 function filterByStat(status, card) {
-  currentFilter = status;
-  currentPage   = 1;
-  // Sync the toolbar filter buttons
-  const statusLabel = { Pending: 'Pending', Confirmed: 'Confirmed', PickedUp: 'Picked Up', Delivered: 'Delivered', Cancelled: 'Cancelled' };
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.toggle('active', status === null ? b.textContent === 'All' : b.textContent === statusLabel[status]);
-  });
-  syncStatHighlight();
-  loadBookings();
+  setFilter(status);
 }
 
 function syncStatHighlight() {
