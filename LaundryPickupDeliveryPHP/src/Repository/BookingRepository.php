@@ -108,7 +108,9 @@ class BookingRepository
         int     $pageSize,
         ?string $status,
         ?string $sortBy,
-        ?string $sortDir
+        ?string $sortDir,
+        string  $search = '',
+        ?string $date = null
     ): array {
         // Whitelist sort columns — prevents SQL injection
         $allowedSort = [
@@ -128,10 +130,25 @@ class BookingRepository
 
         $where  = '';
         $params = [];
+        $conditions = [];
 
         if (!empty($status)) {
-            $where          = 'WHERE Status = :status';
-            $params[':status'] = $status;
+            $conditions[]       = 'Status = :status';
+            $params[':status']  = $status;
+        }
+
+        if ($search !== '') {
+            $conditions[]       = '(Phone LIKE :search OR ApartmentAddress LIKE :search)';
+            $params[':search']  = '%' . $search . '%';
+        }
+
+        if (!empty($date)) {
+            $conditions[]     = 'DATE(PickupTime) = :date';
+            $params[':date']  = $date;
+        }
+
+        if (!empty($conditions)) {
+            $where = 'WHERE ' . implode(' AND ', $conditions);
         }
 
         // Count query

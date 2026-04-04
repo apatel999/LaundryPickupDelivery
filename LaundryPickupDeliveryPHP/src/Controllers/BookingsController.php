@@ -125,8 +125,10 @@ class BookingsController
         $status   = $params['status']  ?? null;
         $sortBy   = $params['sortBy']  ?? 'createdAt';
         $sortDir  = $params['sortDir'] ?? 'desc';
+        $search   = trim($params['search'] ?? '');
+        $date     = $params['date']    ?? null;
 
-        $result = $this->repo->getAll($page, $pageSize, $status, $sortBy, $sortDir);
+        $result = $this->repo->getAll($page, $pageSize, $status, $sortBy, $sortDir, $search, $date);
 
         return $this->json($response, [
             'total'    => $result['total'],

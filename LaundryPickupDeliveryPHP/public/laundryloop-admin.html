@@ -102,6 +102,31 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--page); co
 }
 .refresh-btn:hover { background: var(--brand-dark); }
 
+.search-input {
+  padding: 7px 12px; border-radius: 8px; border: 0.5px solid var(--border);
+  background: var(--page); font-size: 12px; font-weight: 500;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text);
+  outline: none; width: 180px;
+}
+.search-input:focus { border-color: var(--brand-mid); }
+.search-input::placeholder { color: var(--muted); }
+
+.date-input {
+  padding: 7px 12px; border-radius: 8px; border: 0.5px solid var(--border);
+  background: var(--page); font-size: 12px; font-weight: 500;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text);
+  outline: none;
+}
+.date-input:focus { border-color: var(--brand-mid); }
+
+.clear-btn {
+  padding: 7px 12px; border-radius: 8px; border: 0.5px solid var(--border);
+  background: var(--page); font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; color: var(--muted);
+  transition: all 0.15s; white-space: nowrap;
+}
+.clear-btn:hover { border-color: var(--brand-mid); color: var(--brand); }
+
 /* ── TABLE ── */
 .table-wrap { background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border); overflow: hidden; }
 .table-scroll { overflow-x: auto; }
@@ -298,6 +323,14 @@ tr:hover td { background: #fafafa; }
     <button class="refresh-btn" onclick="loadBookings()">↻ Refresh</button>
   </div>
 
+  <!-- SEARCH BAR -->
+  <div class="toolbar" style="padding:10px 18px; gap:10px;">
+    <input type="text" class="search-input" id="search-input" placeholder="🔍 Phone or address…" onkeydown="if(event.key==='Enter') doSearch()" />
+    <input type="date" class="date-input" id="date-input" onchange="doSearch()" />
+    <button class="filter-btn active" style="padding:6px 16px" onclick="doSearch()">🔍 Search</button>
+    <button class="clear-btn" onclick="clearSearch()">Clear</button>
+  </div>
+
   <!-- TABLE -->
   <div class="table-wrap">
     <div class="table-scroll">
@@ -356,6 +389,8 @@ let currentFilter = null;
 let currentSort  = 'createdAt';
 let currentDir   = 'desc';
 let totalCount   = 0;
+let currentSearch = '';
+let currentDate   = '';
 let toastTimer;
 
 /* ── Helpers ── */
@@ -398,6 +433,8 @@ async function loadBookings() {
     sortDir:  currentDir,
   });
   if (currentFilter) params.set('status', currentFilter);
+  if (currentSearch) params.set('search', currentSearch);
+  if (currentDate)   params.set('date', currentDate);
 
   try {
     const res  = await fetch(`${API_BASE}/api/bookings?${params}`);
@@ -512,6 +549,23 @@ async function updateStatus(id, selectEl) {
   } catch (err) {
     showToast('Failed to update status', 'error');
   }
+}
+
+/* ── Search ── */
+function doSearch() {
+  currentSearch = document.getElementById('search-input').value.trim();
+  currentDate   = document.getElementById('date-input').value;
+  currentPage   = 1;
+  loadBookings();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('date-input').value = '';
+  currentSearch = '';
+  currentDate   = '';
+  currentPage   = 1;
+  loadBookings();
 }
 
 /* ── Filter ── */
