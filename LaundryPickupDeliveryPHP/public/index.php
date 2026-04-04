@@ -6,7 +6,7 @@ use DI\ContainerBuilder;
 use LaundryLoop\Config\Database;
 use LaundryLoop\Config\Settings;
 use LaundryLoop\Controllers\BookingsController;
-use LaundryLoop\Middleware\BasicAuthMiddleware;
+use LaundryLoop\Middleware\SessionAuthMiddleware;
 use LaundryLoop\Middleware\JsonMiddleware;
 use LaundryLoop\Repository\BookingRepository;
 use Monolog\Handler\StreamHandler;
@@ -14,6 +14,8 @@ use Monolog\Logger;
 use Slim\Factory\AppFactory;
 
 require __DIR__ . '/../vendor/autoload.php';
+
+session_start();
 
 // ─── 1. Load config (.env) ────────────────────────────────────────────────────
 
@@ -89,12 +91,53 @@ $app->post('/api/bookings',                       [BookingsController::class, 'c
 $app->get('/api/bookings/{id:[0-9]+}',            [BookingsController::class, 'getById']);
 $app->get('/api/bookings/{id:[0-9]+}/cart-items', [BookingsController::class, 'getCartItems']);
 
-// Protected routes — require Basic Auth (mirrors [Authorize] in .NET)
+// ─── Auth routes (login / logout / session check) ────────────────────────────
+
+$app->post('/api/auth/login', function ($request, $response) {
+    $body = $request->getParsedBody();
+    $username = trim($body['username'] ?? '');
+    $password = $body['password'] ?? '';
+
+    if ($username === '' || $password === '') {
+        $response->getBody()->write(json_encode(['error' => 'Username and password are required']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+    }
+
+    $user = Settings::authenticate($username, $password);
+    if (!$user) {
+        $response->getBody()->write(json_encode(['error' => 'Invalid username or password']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+    }
+
+    $_SESSION['user'] = $user;
+    session_regenerate_id(true);
+
+    $response->getBody()->write(json_encode($user));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+$app->post('/api/auth/logout', function ($request, $response) {
+    $_SESSION = [];
+    session_destroy();
+    $response->getBody()->write(json_encode(['message' => 'Logged out']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+$app->get('/api/auth/me', function ($request, $response) {
+    if (empty($_SESSION['user'])) {
+        $response->getBody()->write(json_encode(['error' => 'Not authenticated']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+    }
+    $response->getBody()->write(json_encode($_SESSION['user']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// Protected routes — require session auth
 $app->group('', function ($group) {
     $group->get('/api/bookings',                          [BookingsController::class, 'getAll']);
     $group->patch('/api/bookings/{id:[0-9]+}/status',     [BookingsController::class, 'updateStatus']);
     $group->delete('/api/bookings/{id:[0-9]+}',           [BookingsController::class, 'delete']);
-})->add(new BasicAuthMiddleware());
+})->add(new SessionAuthMiddleware());
 
 // ─── 6. Run ───────────────────────────────────────────────────────────────────
 

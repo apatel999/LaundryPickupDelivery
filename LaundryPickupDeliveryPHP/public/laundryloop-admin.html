@@ -237,6 +237,14 @@ tr:hover td { background: #fafafa; }
 .toast.success { background: #166534; }
 .toast.error   { background: #991b1b; }
 
+.logout-btn {
+  padding: 5px 14px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.25);
+  background: transparent; color: #fff; font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.15); }
+.user-badge { font-size: 12px; color: rgba(255,255,255,0.8); }
+
 @media (max-width: 768px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .wrap  { padding: 16px 12px 48px; }
@@ -249,6 +257,8 @@ tr:hover td { background: #fafafa; }
   <div class="logo">laundry<em>loop</em></div>
   <div style="display:flex;align-items:center;gap:10px">
     <span class="header-badge">Admin Dashboard</span>
+    <span class="user-badge" id="user-badge"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </header>
 
@@ -629,8 +639,23 @@ function closeModal() {
   document.getElementById('details-modal').style.display = 'none';
 }
 
-/* ── Init: fetch config then load ── */
+/* ── Init: check session then fetch config and load ── */
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  window.location.href = 'login.html';
+}
+
 (async () => {
+  // Check if user is logged in
+  try {
+    const meRes = await fetch('/api/auth/me');
+    if (!meRes.ok) { window.location.href = 'login.html'; return; }
+    const user = await meRes.json();
+    document.getElementById('user-badge').textContent = user.username + ' (' + user.role + ')';
+  } catch {
+    window.location.href = 'login.html'; return;
+  }
+
   const config = await fetch('/api/config').then(r => r.json());
   API_BASE = config.baseUrl;
   loadBookings();

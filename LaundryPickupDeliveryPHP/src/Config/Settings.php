@@ -42,7 +42,34 @@ class Settings
                 'username' => self::env('ADMIN_USERNAME', 'admin'),
                 'password' => self::env('ADMIN_PASSWORD', 'changeme'),
             ],
+            'users' => [
+                [
+                    'username' => 'admin',
+                    'password' => 'admin123',
+                    'role'     => 'admin',
+                ],
+                [
+                    'username' => 'driver',
+                    'password' => 'driver123',
+                    'role'     => 'driver',
+                ],
+            ],
         ];
+    }
+
+    /**
+     * Verify username/password against the hardcoded users list.
+     * Returns the user array (without password) on success, or null on failure.
+     */
+    public static function authenticate(string $username, string $password): ?array
+    {
+        $users = self::get('users') ?? [];
+        foreach ($users as $user) {
+            if ($user['username'] === $username && hash_equals($user['password'], $password)) {
+                return ['username' => $user['username'], 'role' => $user['role']];
+            }
+        }
+        return null;
     }
 
     public static function get(string $key): mixed
