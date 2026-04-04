@@ -90,11 +90,11 @@ $app->get('/api/bookings/{id:[0-9]+}',            [BookingsController::class, 'g
 $app->get('/api/bookings/{id:[0-9]+}/cart-items', [BookingsController::class, 'getCartItems']);
 
 // Protected routes — require Basic Auth (mirrors [Authorize] in .NET)
-// $app->group('', function ($group) {
-//     $group->get('/api/bookings',                          [BookingsController::class, 'getAll']);
-//     $group->patch('/api/bookings/{id:[0-9]+}/status',     [BookingsController::class, 'updateStatus']);
-//     $group->delete('/api/bookings/{id:[0-9]+}',           [BookingsController::class, 'delete']);
-// })->add(new BasicAuthMiddleware());
+$app->group('', function ($group) {
+    $group->get('/api/bookings',                          [BookingsController::class, 'getAll']);
+    $group->patch('/api/bookings/{id:[0-9]+}/status',     [BookingsController::class, 'updateStatus']);
+    $group->delete('/api/bookings/{id:[0-9]+}',           [BookingsController::class, 'delete']);
+})->add(new BasicAuthMiddleware());
 
 // ─── 6. Run ───────────────────────────────────────────────────────────────────
 

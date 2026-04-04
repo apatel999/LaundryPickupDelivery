@@ -506,7 +506,7 @@ function statusOptions(current) {
 }
 
 /* ── Update booking status ── */
-async function updateStatus(id, selectEl) {
+window.updateStatus = async function(id, selectEl) {
   const newStatus = selectEl.value;
   selectEl.className = `status-select s-${newStatus}`;
 
