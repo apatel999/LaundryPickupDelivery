@@ -295,7 +295,7 @@ tr:hover td { background: #fafafa; }
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr class="loading-row"><td colspan="10"><div class="spinner"></div><div>Loading bookings…</div></td></tr>
+          <tr class="loading-row"><td colspan="12"><div class="spinner"></div><div>Loading bookings…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -324,83 +324,36 @@ tr:hover td { background: #fafafa; }
 </div>
 
 <script>
-async function showDetails(bookingId) {
-  try {
-    // Fetch booking details and cart items in parallel
-    const [bookingRes, itemsRes] = await Promise.all([
-      fetch(`/api/bookings/${bookingId}`),
-      fetch(`/api/bookings/${bookingId}/cart-items`)
-    ]);
-    
-    if (!bookingRes.ok) throw new Error('Failed to load booking details');
-    if (!itemsRes.ok) throw new Error('Failed to load cost breakdown');
-    
-    const booking = await bookingRes.json();
-    const items = await itemsRes.json();
-    
-    document.getElementById('modal-booking-id').textContent = booking.reference;
-    const body = document.getElementById('modal-body');
-    
-    // Booking details section
-    body.innerHTML = `
-      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
-        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Booking Details</h4>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
-          <div><strong>Address:</strong> ${esc(booking.apartmentAddress)}, Unit ${esc(booking.unitNumber)}</div>
-          <div><strong>Building:</strong> ${esc(booking.apartmentName)}</div>
-          <div><strong>Phone:</strong> ${esc(booking.phone)}</div>
-          <div><strong>Email:</strong> ${booking.email ? esc(booking.email) : '—'}</div>
-          <div><strong>Pickup:</strong> ${esc(booking.slotDay)} — ${esc(booking.slotPeriod)} at ${esc(booking.pickupTime)}</div>
-          <div><strong>Delivery:</strong> ${esc(booking.deliveryTime)}</div>
-          <div><strong>Laundry Size:</strong> ${esc(booking.laundrySize)}</div>
-          <div><strong>Status:</strong> <span class="badge badge-${booking.status}">${booking.status}</span></div>
-        </div>
-        ${booking.notes ? `<div style="margin-top: 8px;"><strong>Notes:</strong> ${esc(booking.notes)}</div>` : ''}
-        ${booking.buzzerCode ? `<div style="margin-top: 4px;"><strong>Buzzer:</strong> ${esc(booking.buzzerCode)}</div>` : ''}
-      </div>
-      
-      <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Cost Breakdown</h4>
-    `;
-    
-    // Cost breakdown
-    body.innerHTML += items.map(item => 
-      `<div class="detail-item">
-        <span>${esc(item.itemName)}</span>
-        <span>$${item.price.toFixed(2)}</span>
-      </div>`
-    ).join('');
-    
-    const total = items.reduce((sum, item) => sum + item.price, 0);
-    body.innerHTML += `<div class="detail-item detail-total">
-      <span>Total</span>
-      <span>$${total.toFixed(2)}</span>
-    </div>`;
-    
-    document.getElementById('details-modal').style.display = 'flex';
-  } catch (err) {
-    alert('Error loading details: ' + err.message);
-  }
-}
+/* ── State ── */
+let API_BASE     = '';
+const PAGE_SIZE  = 50;
+let currentPage  = 1;
+let currentFilter = null;
+let currentSort  = 'createdAt';
+let currentDir   = 'desc';
+let totalCount   = 0;
+let toastTimer;
 
-function closeModal() {
-  document.getElementById('details-modal').style.display = 'none';
-}
-
+/* ── Helpers ── */
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-(async () => {
-  const config = await fetch('/api/config').then(r => r.json());
-  const API_BASE = config.baseUrl;
-  const PAGE_SIZE = 50;
+function showLoading() {
+  document.getElementById('table-body').innerHTML =
+    `<tr class="loading-row"><td colspan="12"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
+}
 
-  let currentPage   = 1;
-  let currentFilter = null;
-  let currentSort   = 'createdAt';
-  let currentDir    = 'desc';
-  let totalCount    = 0;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = 'toast', 3000);
+}
+
+function showError(msg) { showToast(msg, 'error'); }
 
 /* ── Load bookings from API ── */
 async function loadBookings() {
@@ -427,14 +380,13 @@ async function loadBookings() {
   } catch (err) {
     showError('Failed to load bookings: ' + err.message);
     document.getElementById('table-body').innerHTML =
-      `<tr class="empty-row"><td colspan="10">⚠️ Could not connect to API.<br><small>${err.message}</small></td></tr>`;
+      `<tr class="empty-row"><td colspan="12">⚠️ Could not connect to API.<br><small>${esc(err.message)}</small></td></tr>`;
   }
 }
 
 /* ── Load stats (all statuses) ── */
 async function loadStats() {
   try {
-    // Fetch all without filter just to get total counts per status
     const res  = await fetch(`${API_BASE}/api/bookings?pageSize=1000`);
     const data = await res.json();
     const all  = data.items;
@@ -453,18 +405,18 @@ function renderTable(items) {
   const tbody = document.getElementById('table-body');
 
   if (!items || items.length === 0) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="10">No bookings found.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">No bookings found.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = items.map((b, i) => {
     const routeNum = (currentPage - 1) * PAGE_SIZE + i + 1;
-    const buzzer   = b.buzzerCode ? `<div class="buzzer">🔔 ${b.buzzerCode}</div>` : '';
+    const buzzer   = b.buzzerCode ? `<div class="buzzer">🔔 ${esc(b.buzzerCode)}</div>` : '';
     const notes    = b.notes      ? `<div class="notes-cell" title="${esc(b.notes)}">${esc(b.notes)}</div>` : '<span style="color:#ccc">—</span>';
 
     return `<tr id="row-${b.id}">
       <td><span class="route-num">${routeNum}</span></td>
-      <td><span class="ref">${b.reference}</span></td>
+      <td><span class="ref">${esc(b.reference)}</span></td>
       <td>
         <div class="apt-addr">${esc(b.apartmentAddress)}</div>
         <div class="unit">Unit ${esc(b.unitNumber)}</div>
@@ -506,7 +458,7 @@ function statusOptions(current) {
 }
 
 /* ── Update booking status ── */
-window.updateStatus = async function(id, selectEl) {
+async function updateStatus(id, selectEl) {
   const newStatus = selectEl.value;
   selectEl.className = `status-select s-${newStatus}`;
 
@@ -554,7 +506,6 @@ function toggleSort(col) {
   }
   currentPage = 1;
 
-  // Sync the dropdown
   const key = `${col}|${currentDir}`;
   const sel = document.getElementById('sort-select');
   if ([...sel.options].some(o => o.value === key)) sel.value = key;
@@ -592,26 +543,70 @@ function changePage(delta) {
   loadBookings();
 }
 
-/* ── Helpers ── */
-function showLoading() {
-  document.getElementById('table-body').innerHTML =
-    `<tr class="loading-row"><td colspan="10"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
+/* ── Details modal ── */
+async function showDetails(bookingId) {
+  try {
+    const [bookingRes, itemsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/bookings/${bookingId}`),
+      fetch(`${API_BASE}/api/bookings/${bookingId}/cart-items`)
+    ]);
+
+    if (!bookingRes.ok) throw new Error('Failed to load booking details');
+    if (!itemsRes.ok) throw new Error('Failed to load cost breakdown');
+
+    const booking = await bookingRes.json();
+    const items = await itemsRes.json();
+
+    document.getElementById('modal-booking-id').textContent = booking.reference;
+    const body = document.getElementById('modal-body');
+
+    body.innerHTML = `
+      <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid var(--border);">
+        <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Booking Details</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+          <div><strong>Address:</strong> ${esc(booking.apartmentAddress)}, Unit ${esc(booking.unitNumber)}</div>
+          <div><strong>Building:</strong> ${esc(booking.apartmentName)}</div>
+          <div><strong>Phone:</strong> ${esc(booking.phone)}</div>
+          <div><strong>Email:</strong> ${booking.email ? esc(booking.email) : '—'}</div>
+          <div><strong>Pickup:</strong> ${esc(booking.slotDay)} — ${esc(booking.slotPeriod)} at ${esc(booking.pickupTime)}</div>
+          <div><strong>Delivery:</strong> ${esc(booking.deliveryTime)}</div>
+          <div><strong>Laundry Size:</strong> ${esc(booking.laundrySize)}</div>
+          <div><strong>Status:</strong> <span class="badge badge-${booking.status}">${esc(booking.status)}</span></div>
+        </div>
+        ${booking.notes ? `<div style="margin-top: 8px;"><strong>Notes:</strong> ${esc(booking.notes)}</div>` : ''}
+        ${booking.buzzerCode ? `<div style="margin-top: 4px;"><strong>Buzzer:</strong> ${esc(booking.buzzerCode)}</div>` : ''}
+      </div>
+      <h4 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text);">Cost Breakdown</h4>
+    `;
+
+    body.innerHTML += items.map(item =>
+      `<div class="detail-item">
+        <span>${esc(item.itemName)}</span>
+        <span>$${Number(item.price).toFixed(2)}</span>
+      </div>`
+    ).join('');
+
+    const total = items.reduce((sum, item) => sum + Number(item.price), 0);
+    body.innerHTML += `<div class="detail-item detail-total">
+      <span>Total</span>
+      <span>$${total.toFixed(2)}</span>
+    </div>`;
+
+    document.getElementById('details-modal').style.display = 'flex';
+  } catch (err) {
+    alert('Error loading details: ' + err.message);
+  }
 }
 
-let toastTimer;
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `toast show ${type}`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.className = 'toast', 3000);
+function closeModal() {
+  document.getElementById('details-modal').style.display = 'none';
 }
 
-function showError(msg) { showToast(msg, 'error'); }
-
-  /* ── Init ── */
+/* ── Init: fetch config then load ── */
+(async () => {
+  const config = await fetch('/api/config').then(r => r.json());
+  API_BASE = config.baseUrl;
   loadBookings();
-
 })();
 </script>
 </body>
