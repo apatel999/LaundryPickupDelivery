@@ -223,6 +223,20 @@ tr:hover td { background: #fafafa; }
 .page-btn:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand-mid); color: var(--brand); }
 .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 10px 22px; border-radius: 10px;
+  background: #1a1830; color: #fff; font-size: 13px; font-weight: 500;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s, bottom 0.3s;
+  z-index: 2000; white-space: nowrap;
+}
+.toast.show { opacity: 1; bottom: 32px; pointer-events: auto; }
+.toast.success { background: #166534; }
+.toast.error   { background: #991b1b; }
+
 @media (max-width: 768px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .wrap  { padding: 16px 12px 48px; }
@@ -265,7 +279,7 @@ tr:hover td { background: #fafafa; }
     <select class="sort-select" id="sort-select" onchange="setSort(this.value)">
       <option value="createdAt|desc">Newest first</option>
       <option value="apartmentAddress|asc">📍 Address A→Z</option>
-      <option value="apartmentName|asc">🏢 Building A→Z</option>
+      <!-- <option value="apartmentName|asc">🏢 Building A→Z</option> -->
       <option value="slotDay|asc">📅 Pickup day</option>
       <option value="pickupTime|asc">⏰ Pickup time</option>
       <option value="status|asc">Status</option>
@@ -283,7 +297,7 @@ tr:hover td { background: #fafafa; }
             <th style="width:32px">#</th>
             <th onclick="toggleSort('reference')">Ref <span class="sort-arrow" id="arrow-reference">↕</span></th>
             <th onclick="toggleSort('apartmentAddress')">Address <span class="sort-arrow" id="arrow-apartmentAddress">↕</span></th>
-            <th onclick="toggleSort('apartmentName')">Building <span class="sort-arrow" id="arrow-apartmentName">↕</span></th>
+            <!-- <th onclick="toggleSort('apartmentName')">Building <span class="sort-arrow" id="arrow-apartmentName">↕</span></th> -->
             <th>Contact</th>
             <th onclick="toggleSort('slotDay')">Pickup <span class="sort-arrow" id="arrow-slotDay">↕</span></th>
             <th>Delivery</th>
@@ -295,7 +309,7 @@ tr:hover td { background: #fafafa; }
           </tr>
         </thead>
         <tbody id="table-body">
-          <tr class="loading-row"><td colspan="12"><div class="spinner"></div><div>Loading bookings…</div></td></tr>
+          <tr class="loading-row"><td colspan="11"><div class="spinner"></div><div>Loading bookings…</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -340,9 +354,17 @@ function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function fmtDateTime(val) {
+  if (!val) return '—';
+  const d = new Date(val);
+  if (isNaN(d)) return esc(val);
+  const opts = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true };
+  return d.toLocaleString('en-US', opts);
+}
+
 function showLoading() {
   document.getElementById('table-body').innerHTML =
-    `<tr class="loading-row"><td colspan="12"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
+    `<tr class="loading-row"><td colspan="11"><div class="spinner"></div><div style="color:var(--muted)">Loading…</div></td></tr>`;
 }
 
 function showToast(msg, type = '') {
@@ -380,23 +402,29 @@ async function loadBookings() {
   } catch (err) {
     showError('Failed to load bookings: ' + err.message);
     document.getElementById('table-body').innerHTML =
-      `<tr class="empty-row"><td colspan="12">⚠️ Could not connect to API.<br><small>${esc(err.message)}</small></td></tr>`;
+      `<tr class="empty-row"><td colspan="11">⚠️ Could not connect to API.<br><small>${esc(err.message)}</small></td></tr>`;
   }
 }
 
-/* ── Load stats (all statuses) ── */
+/* ── Load stats (per-status counts) ── */
 async function loadStats() {
   try {
-    const res  = await fetch(`${API_BASE}/api/bookings?pageSize=1000`);
-    const data = await res.json();
-    const all  = data.items;
+    const statuses = ['Pending','Confirmed','PickedUp','Delivered','Cancelled'];
+    const counts = {};
+    let total = 0;
 
-    const count = (s) => all.filter(b => b.status === s).length;
-    document.getElementById('st-total').textContent     = data.total;
-    document.getElementById('st-pending').textContent   = count('Pending');
-    document.getElementById('st-confirmed').textContent = count('Confirmed');
-    document.getElementById('st-pickedup').textContent  = count('PickedUp');
-    document.getElementById('st-delivered').textContent = count('Delivered');
+    await Promise.all(statuses.map(async (s) => {
+      const res = await fetch(`${API_BASE}/api/bookings?status=${s}&pageSize=1&page=1`);
+      const data = await res.json();
+      counts[s] = data.total;
+      total += data.total;
+    }));
+
+    document.getElementById('st-total').textContent     = total;
+    document.getElementById('st-pending').textContent   = counts.Pending   || 0;
+    document.getElementById('st-confirmed').textContent = counts.Confirmed || 0;
+    document.getElementById('st-pickedup').textContent  = counts.PickedUp  || 0;
+    document.getElementById('st-delivered').textContent = counts.Delivered || 0;
   } catch { /* stats are non-critical */ }
 }
 
@@ -405,7 +433,7 @@ function renderTable(items) {
   const tbody = document.getElementById('table-body');
 
   if (!items || items.length === 0) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="12">No bookings found.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="11">No bookings found.</td></tr>`;
     return;
   }
 
@@ -422,17 +450,16 @@ function renderTable(items) {
         <div class="unit">Unit ${esc(b.unitNumber)}</div>
         ${buzzer}
       </td>
-      <td><div class="apt-name">${esc(b.apartmentName)}</div></td>
+      <!-- <td><div class="apt-name">${esc(b.apartmentName)}</div></td> -->
       <td>
         <div class="phone">📞 ${esc(b.phone)}</div>
         ${b.email ? `<div class="apt-addr">✉️ ${esc(b.email)}</div>` : ''}
       </td>
       <td>
-        <div class="slot-day">${esc(b.slotDay)} — ${esc(b.slotPeriod)}</div>
-        <div class="slot-time">📦 ${esc(b.pickupTime)}</div>
+        <div class="slot-day">📦 ${fmtDateTime(b.pickupTime)}</div>
       </td>
       <td>
-        <div class="delivery">✅ ${esc(b.deliveryTime)}</div>
+        <div class="delivery">✅ ${fmtDateTime(b.deliveryTime)}</div>
       </td>
       <td>
         <div class="laundry-size">${esc(b.laundrySize)}</div>
@@ -568,8 +595,8 @@ async function showDetails(bookingId) {
           <div><strong>Building:</strong> ${esc(booking.apartmentName)}</div>
           <div><strong>Phone:</strong> ${esc(booking.phone)}</div>
           <div><strong>Email:</strong> ${booking.email ? esc(booking.email) : '—'}</div>
-          <div><strong>Pickup:</strong> ${esc(booking.slotDay)} — ${esc(booking.slotPeriod)} at ${esc(booking.pickupTime)}</div>
-          <div><strong>Delivery:</strong> ${esc(booking.deliveryTime)}</div>
+          <div><strong>Pickup:</strong> ${fmtDateTime(booking.pickupTime)}</div>
+          <div><strong>Delivery:</strong> ${fmtDateTime(booking.deliveryTime)}</div>
           <div><strong>Laundry Size:</strong> ${esc(booking.laundrySize)}</div>
           <div><strong>Status:</strong> <span class="badge badge-${booking.status}">${esc(booking.status)}</span></div>
         </div>
