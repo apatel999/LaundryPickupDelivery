@@ -79,6 +79,22 @@
   .err-msg { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
   .err-msg.show { display: block; }
 
+  /* Address autocomplete */
+  .addr-wrap { position: relative; }
+  .addr-list {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: #fff; border: 1px solid var(--color-border-secondary, rgba(0,0,0,0.15));
+    border-radius: 12px; margin-top: 4px; max-height: 200px; overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12); display: none;
+  }
+  .addr-list.open { display: block; }
+  .addr-item {
+    padding: 10px 14px; font-size: 13px; cursor: pointer;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06); color: var(--color-text-primary);
+  }
+  .addr-item:last-child { border-bottom: none; }
+  .addr-item:hover, .addr-item.active { background: var(--blue-light, #eef6fb); }
+
   /* Laundry size cards */
   .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .size-card {
@@ -182,9 +198,10 @@
     </div>
     
     <div class="content" style="margin-top:14px;">
-      <div class="field-group">
+      <div class="field-group addr-wrap">
         <div class="field-label">Pickup address <span style="color:var(--red)">*</span></div>
-        <input class="field-input" id="addr" type="text" placeholder="123 Main St, Toronto ON" />
+        <input class="field-input" id="addr" type="text" placeholder="123 Main St, Toronto ON" autocomplete="off" />
+        <div class="addr-list" id="addr-list"></div>
         <div class="err-msg" id="e-addr">Please enter your pickup address.</div>
       </div>
       <div class="field-group">
@@ -676,4 +693,88 @@ async function placeOrder() {
 function resetForm() {
   window.location.reload();
 }
+
+/* ── Photon address autocomplete ── */
+(function() {
+  var addrInput = document.getElementById('addr');
+  var listEl    = document.getElementById('addr-list');
+  var timer     = null;
+  var activeIdx = -1;
+
+  addrInput.addEventListener('input', function() {
+    clearTimeout(timer);
+    var q = addrInput.value.trim();
+    if (q.length < 3) { closeList(); return; }
+    timer = setTimeout(function() { fetchSuggestions(q); }, 300);
+  });
+
+  function fetchSuggestions(q) {
+    fetch('https://photon.komoot.io/api/?q=' + encodeURIComponent(q) + '&limit=5')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var features = data.features || [];
+        if (!features.length) { closeList(); return; }
+        activeIdx = -1;
+        listEl.innerHTML = features.map(function(f, i) {
+          var p = f.properties;
+          var parts = [p.housenumber, p.street, p.city, p.state, p.postcode, p.country].filter(Boolean);
+          return '<div class="addr-item" data-idx="' + i + '">' + escHtml(parts.join(', ')) + '</div>';
+        }).join('');
+        listEl.classList.add('open');
+
+        listEl.querySelectorAll('.addr-item').forEach(function(el) {
+          el.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+            pick(el.textContent);
+          });
+        });
+      })
+      .catch(function() { closeList(); });
+  }
+
+  function pick(text) {
+    addrInput.value = text;
+    closeList();
+    addrInput.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function closeList() {
+    listEl.classList.remove('open');
+    listEl.innerHTML = '';
+    activeIdx = -1;
+  }
+
+  addrInput.addEventListener('keydown', function(e) {
+    var items = listEl.querySelectorAll('.addr-item');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = Math.min(activeIdx + 1, items.length - 1);
+      highlightItem(items);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = Math.max(activeIdx - 1, 0);
+      highlightItem(items);
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      pick(items[activeIdx].textContent);
+    } else if (e.key === 'Escape') {
+      closeList();
+    }
+  });
+
+  function highlightItem(items) {
+    items.forEach(function(el, i) {
+      el.classList.toggle('active', i === activeIdx);
+    });
+  }
+
+  addrInput.addEventListener('blur', function() {
+    setTimeout(closeList, 150);
+  });
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+})();
 </script>
