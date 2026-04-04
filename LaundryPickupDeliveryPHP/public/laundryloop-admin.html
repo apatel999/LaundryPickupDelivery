@@ -562,7 +562,30 @@ function setFilter(status, btn) {
   currentPage   = 1;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  syncStatHighlight();
   loadBookings();
+}
+
+function filterByStat(status, card) {
+  currentFilter = status;
+  currentPage   = 1;
+  // Sync the toolbar filter buttons
+  const statusLabel = { Pending: 'Pending', Confirmed: 'Confirmed', PickedUp: 'Picked Up', Delivered: 'Delivered', Cancelled: 'Cancelled' };
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', status === null ? b.textContent === 'All' : b.textContent === statusLabel[status]);
+  });
+  syncStatHighlight();
+  loadBookings();
+}
+
+function syncStatHighlight() {
+  document.querySelectorAll('.stat-card').forEach(c => c.classList.remove('active-stat'));
+  if (!currentFilter) {
+    document.querySelector('.stat-card:first-child')?.classList.add('active-stat');
+  } else {
+    const map = { Pending: '.s-pending', Confirmed: '.s-confirmed', PickedUp: '.s-pickedup', Delivered: '.s-delivered' };
+    if (map[currentFilter]) document.querySelector(`.stat-card${map[currentFilter]}`)?.classList.add('active-stat');
+  }
 }
 
 /* ── Sort from dropdown ── */
