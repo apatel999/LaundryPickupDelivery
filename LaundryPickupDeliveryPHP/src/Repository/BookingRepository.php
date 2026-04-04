@@ -138,8 +138,9 @@ class BookingRepository
         }
 
         if ($search !== '') {
-            $conditions[]       = '(Phone LIKE :search OR ApartmentAddress LIKE :search)';
-            $params[':search']  = '%' . $search . '%';
+            $conditions[]            = '(Phone LIKE :searchPhone OR ApartmentAddress LIKE :searchAddr)';
+            $params[':searchPhone']  = '%' . $search . '%';
+            $params[':searchAddr']   = '%' . $search . '%';
         }
 
         if (!empty($date)) {
