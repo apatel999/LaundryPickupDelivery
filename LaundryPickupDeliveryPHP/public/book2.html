@@ -1,4 +1,11 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LaundryLoop — Book</title>
+</head>
+<body>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@600&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -9,7 +16,7 @@
     --amber: #EF9F27; --amber-light: #FAEEDA;
     --red: #E24B4A; --red-light: #FCEBEB;
   }
-  body { font-family: 'DM Sans', sans-serif; background: var(--color-background-tertiary, #f5f4f0); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 2rem 1rem; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--color-background-tertiary, #f5f4f0); min-height: 100vh; min-height: 100dvh; display: flex; justify-content: center; align-items: flex-start; padding: 2rem 1rem; }
   .phone-frame {
     width: 375px; max-width: 100%; background: var(--color-background-primary, #fff);
     border-radius: 24px; border: 0.5px solid var(--color-border-tertiary);
@@ -19,9 +26,9 @@
   .screen { display: none; flex-direction: column; }
   .screen.active { display: flex; }
 
-  @media (max-width: 420px) {
-    body { padding: 0; }
-    .phone-frame { width: 100%; border-radius: 0; border: none; box-shadow: none; min-height: 100vh; }
+  @media (max-width: 480px) {
+    body { padding: 0; background: var(--color-background-primary, #fff); }
+    .phone-frame { width: 100%; max-width: 100%; border-radius: 0; border: none; box-shadow: none; min-height: 100vh; min-height: 100dvh; }
   }
 
   /* Top bar */
@@ -778,3 +785,5 @@ function resetForm() {
   }
 })();
 </script>
+</body>
+</html>
